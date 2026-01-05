@@ -1,0 +1,5 @@
+{
+  "name": "Portal Estiba VLC - Admin Panel",
+  "description": "Enterprise-grade administration dashboard for the Portal Estiba VLC PWA, managing port operations, users, and premium features via Supabase.",
+  "requestFramePermissions": []
+}
