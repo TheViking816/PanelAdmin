@@ -52,7 +52,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
         }`}
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-port-800">
-          {isSidebarOpen && <span className="font-bold text-lg tracking-tight">Portal Estiba</span>}
+          <div className="flex items-center space-x-2">
+            <img
+              src="./assets/logo.png"
+              alt="Portal Estiba"
+              className="h-8 w-8 rounded-full object-contain"
+            />
+            {isSidebarOpen && <span className="font-bold text-lg tracking-tight">Portal Estiba</span>}
+          </div>
           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-1 hover:bg-port-800 rounded">
             {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -79,7 +86,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm md:hidden transition-opacity" onClick={() => setMobileMenuOpen(false)}>
           <div className="w-72 h-full bg-port-900 p-4 shadow-2xl transform transition-transform" onClick={e => e.stopPropagation()}>
              <div className="flex justify-between items-center mb-6 border-b border-port-800 pb-4">
-                <span className="font-bold text-white text-lg">Portal Analytics</span>
+                <div className="flex items-center space-x-2">
+                  <img
+                    src="./assets/logo.png"
+                    alt="Portal Estiba"
+                    className="h-8 w-8 rounded-full object-contain"
+                  />
+                  <span className="font-bold text-white text-lg">Portal Estiba</span>
+                </div>
                 <button onClick={() => setMobileMenuOpen(false)} className="text-white p-2 rounded hover:bg-port-800"><X size={24} /></button>
              </div>
              <nav className="space-y-2">
