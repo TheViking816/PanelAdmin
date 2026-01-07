@@ -23,7 +23,7 @@ const StatCard: React.FC<{ title: string; value: string | number; subtext?: stri
 export const Dashboard: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [timeFilter, setTimeFilter] = useState('30d');
+  const [timeFilter, setTimeFilter] = useState('1d');
 
   useEffect(() => {
     loadData();
@@ -232,10 +232,12 @@ export const Dashboard: React.FC = () => {
                   let Icon = Globe;
                   let colorClass = "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300";
                   
-                  if (event.details.includes('home') || event.details === '/') {
+                  const pageDetails = event.meta || '';
+
+                  if (pageDetails.includes('home') || pageDetails === '/') {
                       Icon = Monitor;
                       colorClass = "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
-                  } else if (event.details.includes('user')) {
+                  } else if (pageDetails.includes('user')) {
                       Icon = Users;
                       colorClass = "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400";
                   }
@@ -258,9 +260,11 @@ export const Dashboard: React.FC = () => {
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400 px-2 py-0.5 rounded">
+                            {event.meta || '/'}
+                          </span>
+                          <span className="text-xs text-slate-400 font-mono">
                             {new Date(event.date).toLocaleDateString()} {new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                           </span>
-                          <span className="text-xs text-slate-400 font-mono">{event.meta || 'Anon'}</span>
                         </div>
                       </div>
                     </div>

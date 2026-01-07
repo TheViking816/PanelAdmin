@@ -113,7 +113,7 @@ export const UsersPage: React.FC = () => {
             <thead className="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
               <tr>
                 <SortableHeader label="Usuario" sortKey="nombre" currentSort={sortConfig} onSort={handleSort} />
-                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider w-48">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Chapa</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Estado</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Premium</th>
@@ -146,7 +146,7 @@ export const UsersPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                      {user.email}
+                      <span className="block max-w-[180px] truncate">{user.email}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600 dark:text-slate-400">
                       {user.chapa}

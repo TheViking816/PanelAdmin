@@ -144,6 +144,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       .limit(5000);
 
     // Apply Time Filter Logic
+    let thresholdDate: string | null = null;
     if (timeFilter !== 'all') {
       const now = new Date();
       let subtractDays = 30;
@@ -151,13 +152,34 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       if (timeFilter === '3d') subtractDays = 3;
       if (timeFilter === '7d') subtractDays = 7;
       
-      const thresholdDate = new Date(now.setDate(now.getDate() - subtractDays)).toISOString();
+      thresholdDate = new Date(now.setDate(now.getDate() - subtractDays)).toISOString();
       query = query.gte('ts', thresholdDate);
     }
 
     let { data: events, error: eventsError } = await query;
 
-    if (eventsError) console.warn("Error reading 'page_events':", eventsError);
+    if (eventsError) console.warn("Error reading 'page_events':", eventsError); 
+
+    const baseCountQuery = supabase
+      .from('page_events')
+      .select('id', { count: 'exact', head: true });
+
+    if (thresholdDate) {
+      baseCountQuery.gte('ts', thresholdDate);
+    }
+
+    const { count: totalViewsCount } = await baseCountQuery;
+
+    const homeCountQuery = supabase
+      .from('page_events')
+      .select('id', { count: 'exact', head: true })
+      .in('page', ['/', '/home', '']);
+
+    if (thresholdDate) {
+      homeCountQuery.gte('ts', thresholdDate);
+    }
+
+    const { count: homeViewsCount } = await homeCountQuery;
 
     // Map events for safe usage
     const safeEvents = (events || []).map((e: any) => ({
@@ -199,7 +221,11 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
          userActivityCounts[v.user_id] = (userActivityCounts[v.user_id] || 0) + 1;
       }
     });
-    
+
+    if (typeof homeViewsCount === 'number') {
+      pageCounts['/'] = homeViewsCount;
+    }
+
     // Convert Pages Map to Array
     const allPages = Object.entries(pageCounts)
       .map(([name, value]) => ({ name, value }))
@@ -215,19 +241,19 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
     const dailyMap: Record<string, { dateStr: string, sortKey: number, users: Set<string>, views: number }> = {};
     safeEvents.forEach(v => {
       const d = new Date(v.created_at);
-      if (isNaN(d.getTime())) return; 
-      
-      const dateStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-      const sortKey = d.getTime(); 
-      // Grouping by Hour if 1d filter, else by Day
-      let key = d.toISOString().split('T')[0]; 
-      
-      if (timeFilter === '1d') {
-          key = `${key}-${d.getHours()}`; // Group by hour
-      }
+      if (isNaN(d.getTime())) return;
+
+      const bucketDate = timeFilter === '1d'
+        ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours())
+        : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const sortKey = bucketDate.getTime();
+      const key = String(sortKey);
+      const dateStr = timeFilter === '1d'
+        ? bucketDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : `${bucketDate.getDate().toString().padStart(2, '0')}/${(bucketDate.getMonth() + 1).toString().padStart(2, '0')}`;
 
       if (!dailyMap[key]) {
-        dailyMap[key] = { dateStr: timeFilter === '1d' ? `${d.getHours()}:00` : dateStr, sortKey, users: new Set(), views: 0 };
+        dailyMap[key] = { dateStr, sortKey, users: new Set(), views: 0 };
       }
       dailyMap[key].views++;
       if (v.user_id !== 'anon') dailyMap[key].users.add(v.user_id);
@@ -241,13 +267,19 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
         vistas: d.views
       }));
 
-    // --- Timeline Events (Latest Page Accesses from Filtered Set) ---
-    const timelineEvents = (events || []).slice(0, 20).map((e: any) => ({
+    const last24Threshold = Date.now() - 24 * 60 * 60 * 1000;
+    const last24Events = (events || []).filter((e: any) => {
+      const tsValue = new Date(e.ts || e.created_at || '').getTime();
+      return !Number.isNaN(tsValue) && tsValue >= last24Threshold;
+    });
+
+    // --- Timeline Events (Last 24h) ---
+    const timelineEvents = last24Events.map((e: any) => ({
       id: e.id ? String(e.id) : Math.random().toString(),
       type: 'page_view',
       date: e.ts,
-      details: `Visitó ${e.page || '/'}`,
-      meta: e.chapa ? `Chapa: ${e.chapa}` : 'Anónimo'
+      details: e.chapa ? `${e.chapa}` : 'Anonimo',
+      meta: e.page || '/'
     }));
 
     return {
@@ -255,7 +287,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
         totalUsers: totalUsersCount || 0,
         premiumUsers: totalActivePremiumCount || 0,
         monthlyActiveUsers: uniqueUserIds.size, // This is now "Unique Users in Range"
-        totalViews: safeEvents.length
+        totalViews: totalViewsCount || safeEvents.length
       },
       topPages: allPages,
       topUsers, // New Data
@@ -268,3 +300,4 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
     return null;
   }
 };
+

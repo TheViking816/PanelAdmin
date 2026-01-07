@@ -1,6 +1,6 @@
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open('paneladmin-static-v1').then((cache) => {
+    caches.open('paneladmin-static-v2').then((cache) => {
       return cache.addAll([
         './',
         './index.html',
@@ -19,7 +19,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== 'paneladmin-static-v1') {
+          if (key !== 'paneladmin-static-v2') {
             return caches.delete(key);
           }
           return undefined;
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (event) => {
       return fetch(event.request).then((response) => {
         const responseClone = response.clone();
         if (response.status === 200 && response.type === 'basic') {
-          caches.open('paneladmin-static-v1').then((cache) => {
+          caches.open('paneladmin-static-v2').then((cache) => {
             cache.put(event.request, responseClone);
           });
         }
