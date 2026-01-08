@@ -8,7 +8,7 @@
     
     <!-- PWA Settings -->
     <!-- Changed to relative path ./ for GitHub Pages support -->
-    <link rel="manifest" href="./manifest.json?v=5" />
+    <link rel="manifest" href="./manifest.json?v=6" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="color-scheme" content="dark light" />
     
@@ -85,11 +85,11 @@
   <body>
     <div id="root"></div>
     <!-- CRITICAL: Entry point script was missing. Using relative path ./ -->   
-    <script type="module" src="./index.tsx?v=5"></script>
+    <script type="module" src="./index.tsx?v=6"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js?v=5');
+          navigator.serviceWorker.register('./sw.js?v=6');
         });
       }
     </script>

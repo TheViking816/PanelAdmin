@@ -181,6 +181,42 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
 
     const { count: homeViewsCount } = await homeCountQuery;
 
+    const fetchUniqueUsersCount = async (since: string | null) => {
+      const uniqueUsers = new Set<string>();
+      const pageSize = 1000;
+      let from = 0;
+
+      while (true) {
+        let uniqueQuery = supabase
+          .from('page_events')
+          .select('chapa, ts')
+          .order('ts', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (since) {
+          uniqueQuery = uniqueQuery.gte('ts', since);
+        }
+
+        const { data, error } = await uniqueQuery;
+        if (error) {
+          console.warn("Error fetching unique users:", error);
+          break;
+        }
+
+        if (!data || data.length === 0) break;
+
+        for (const row of data) {
+          const chapa = row.chapa ? String(row.chapa) : '';
+          if (chapa && chapa !== 'anon') uniqueUsers.add(chapa);
+        }
+
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return uniqueUsers.size;
+    };
+
     // Map events for safe usage
     const safeEvents = (events || []).map((e: any) => ({
         path: e.page || '/',
@@ -200,8 +236,8 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
 
     // --- Calculations based on Filtered Events ---
 
-    // Unique Users in the time range
-    const uniqueUserIds = new Set(safeEvents.map(v => v.user_id).filter(id => id !== 'anon'));
+    // Unique Users in the time range (not limited by the events page size)
+    const uniqueUsersCount = await fetchUniqueUsersCount(thresholdDate);
 
     // Rank Pages (in the time range)
     const pageCounts: Record<string, number> = {};
@@ -306,7 +342,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
         peakHourlyUniqueUsers,
         peakHourlyViews,
         premiumUsers: totalActivePremiumCount || 0,
-        monthlyActiveUsers: uniqueUserIds.size, // This is now "Unique Users in Range"
+        monthlyActiveUsers: uniqueUsersCount, // This is now "Unique Users in Range"
         totalViews: totalViewsCount || safeEvents.length
       },
       topPages: allPages,

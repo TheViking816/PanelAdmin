@@ -83,9 +83,14 @@ export const PremiumPage: React.FC = () => {
              Usuarios con estado 'active'.
           </p>
         </div>
-        <Button variant="secondary" icon={<RefreshCw size={16} />} onClick={loadSubscriptions}>
-          Recargar Datos
-        </Button>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-medium text-amber-700 bg-amber-50 dark:bg-amber-900 dark:text-amber-200 px-2 py-1 rounded">
+            Total Activos: {sortedSubscriptions.length}
+          </span>
+          <Button variant="secondary" icon={<RefreshCw size={16} />} onClick={loadSubscriptions}>
+            Recargar Datos
+          </Button>
+        </div>
       </div>
 
       <Card className="overflow-hidden">
@@ -168,11 +173,6 @@ export const PremiumPage: React.FC = () => {
               )}
             </tbody>
           </table>
-        </div>
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-           <span className="text-xs font-medium text-amber-700 bg-amber-50 dark:bg-amber-900 dark:text-amber-200 px-2 py-1 rounded">
-             Total Activos: {sortedSubscriptions.length}
-           </span>
         </div>
       </Card>
     </div>
