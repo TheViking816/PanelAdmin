@@ -24,6 +24,7 @@ export const Dashboard: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState('1d');
+  const [chapaQuery, setChapaQuery] = useState('');
 
   useEffect(() => {
     loadData();
@@ -48,6 +49,28 @@ export const Dashboard: React.FC = () => {
       default: return 'Periodo';
     }
   };
+
+  const getTimelineEvents = () => {
+    if (!data) return [];
+    const normalized = chapaQuery.trim().toLowerCase();
+    let events = data.timelineEvents;
+    if (!normalized) return events;
+
+    const last24Threshold = Date.now() - 24 * 60 * 60 * 1000;
+
+    events = events.filter((event) => {
+      const ts = new Date(event.date);
+      if (Number.isNaN(ts.getTime())) return false;
+      if (ts.getTime() < last24Threshold) return false;
+      return (event.details || '').toLowerCase().includes(normalized);
+    });
+
+    return [...events].sort((a, b) => {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+  };
+
+  const timelineEvents = getTimelineEvents();
 
   return (
     <div className="space-y-6">
@@ -233,12 +256,41 @@ export const Dashboard: React.FC = () => {
             </Card>
 
              {/* Events Timeline */}
-            <Card title="Últimos Accesos (En Tiempo Real)" className="lg:col-span-2">
+            <Card
+              title="Últimos Accesos (En Tiempo Real)"
+              className="lg:col-span-2"
+              action={
+                <div className="flex items-center gap-2">
+                  <input
+                    value={chapaQuery}
+                    onChange={(e) => setChapaQuery(e.target.value)}
+                    placeholder="Buscar chapa..."
+                    className="text-xs px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-port-500 focus:ring-1 focus:ring-port-500"
+                  />
+                  {chapaQuery.trim().length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setChapaQuery('')}
+                      className="text-xs px-2 py-1 rounded-md border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+              }
+            >
+              {chapaQuery.trim().length > 0 && (
+                <div className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+                  Historial de las últimas 24h para la chapa "{chapaQuery.trim()}"
+                </div>
+              )}
               <div className="space-y-0 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                {data.timelineEvents.length === 0 && (
-                  <div className="text-center py-8 text-slate-400">No hay eventos recientes</div>
+                {timelineEvents.length === 0 && (
+                  <div className="text-center py-8 text-slate-400">
+                    {chapaQuery.trim().length > 0 ? 'Sin accesos en las últimas 24h para esa chapa' : 'No hay eventos recientes'}
+                  </div>
                 )}
-                {data.timelineEvents.map((event, idx) => {
+                {timelineEvents.map((event, idx) => {
                   let Icon = Globe;
                   let colorClass = "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300";
                   
