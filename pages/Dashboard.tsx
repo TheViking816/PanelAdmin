@@ -191,9 +191,9 @@ export const Dashboard: React.FC = () => {
 
             {/* Main Chart: Activity */}
             <Card className="lg:col-span-2 min-w-0" title={`Actividad: ${getTimeLabel()}`}>
-              <div className="h-80 w-full relative">
+              <div className="h-80 w-full min-w-0 min-h-[320px] relative">
                 {data.activityData.length > 0 ? (
-                  <div style={{ width: '100%', height: '100%', position: 'absolute' }}>
+                  <div style={{ width: '100%', height: '100%', position: 'absolute' }} className="min-w-0 min-h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={data.activityData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                         <defs>
@@ -233,7 +233,7 @@ export const Dashboard: React.FC = () => {
             <Card title="Vistas por Página" className="min-w-0">
               <div className="w-full overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
                 {data.topPages.length > 0 ? (
-                  <div style={{ height: Math.max(300, data.topPages.length * 35 + 50), width: '100%', minHeight: 300 }}>
+                  <div style={{ height: Math.max(300, data.topPages.length * 35 + 50), width: '100%', minHeight: 300 }} className="min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart layout="vertical" data={data.topPages} margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
                         <XAxis type="number" hide />

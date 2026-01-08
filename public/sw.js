@@ -1,10 +1,11 @@
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open('paneladmin-static-v2').then((cache) => {
+    caches.open('paneladmin-static-v3').then((cache) => {
       return cache.addAll([
         './',
         './index.html',
         './manifest.json',
+        './assets/logo.png',
         './icons/icon-192.png',
         './icons/icon-512.png',
         './icons/icon-512-maskable.png',
@@ -19,7 +20,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== 'paneladmin-static-v2') {
+          if (key !== 'paneladmin-static-v3') {
             return caches.delete(key);
           }
           return undefined;
