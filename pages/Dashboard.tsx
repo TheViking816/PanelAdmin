@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card } from '../components/UI';
+import { Card, Badge } from '../components/UI';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend
 } from 'recharts';
@@ -90,7 +90,7 @@ export const Dashboard: React.FC = () => {
       ) : (
         <>
           {/* KPI Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <StatCard 
               title={`Usuarios Diferentes (${timeFilter})`}
               value={data.kpi.monthlyActiveUsers} 
@@ -98,23 +98,30 @@ export const Dashboard: React.FC = () => {
               icon={<Activity size={24} />}
               color="bg-indigo-600"
             />
-            <StatCard 
-              title="Total Visualizaciones" 
-              value={data.kpi.totalViews} 
+            <StatCard
+              title="Total Visualizaciones"
+              value={data.kpi.totalViews}
               subtext={`Páginas vistas (${getTimeLabel()})`}
               icon={<Eye size={24} />}
               color="bg-emerald-500"
             />
-            <StatCard 
-              title="Usuarios Registrados" 
-              value={data.kpi.totalUsers} 
-              subtext="Base de datos completa (Total)"
+            <StatCard
+              title="Pico Usuarios Diferentes (1h)"
+              value={data.kpi.peakHourlyUniqueUsers}
+              subtext="Max. usuarios distintos en una hora"
               icon={<Users size={24} />}
               color="bg-blue-600"
             />
-            <StatCard 
-              title="Premium Activos" 
-              value={data.kpi.premiumUsers} 
+            <StatCard
+              title="Pico Visitas (1h)"
+              value={data.kpi.peakHourlyViews}
+              subtext="Max. vistas en una hora"
+              icon={<Eye size={24} />}
+              color="bg-indigo-600"
+            />
+            <StatCard
+              title="Premium Activos"
+              value={data.kpi.premiumUsers}
               subtext="Suscripciones vigentes"
               icon={<Zap size={24} />}
               color="bg-amber-500"
@@ -141,9 +148,12 @@ export const Dashboard: React.FC = () => {
                              {idx < 3 ? <Crown size={14} className={idx === 0 ? 'fill-amber-700' : ''}/> : idx + 1}
                            </div>
                            <div className="flex flex-col min-w-0">
-                              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
-                                {user.name}
-                              </span>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
+                                  {user.name}
+                                </span>
+                                {user.isPremium && <Badge color="yellow">Premium</Badge>}
+                              </div>
                               <span className="text-[10px] text-slate-400 uppercase">Chapa / ID</span>
                            </div>
                         </div>
@@ -255,9 +265,12 @@ export const Dashboard: React.FC = () => {
                       </div>
                       
                       <div className="pb-6 pt-2">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                          {event.details}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {event.details}
+                          </p>
+                          {event.isPremium && <Badge color="yellow">Premium</Badge>}
+                        </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400 px-2 py-0.5 rounded">
                             {event.meta || '/'}

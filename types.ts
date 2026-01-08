@@ -37,13 +37,14 @@ export interface PremiumSubscription {
 
 export interface DashboardData {
   kpi: {
-    totalUsers: number;
+    peakHourlyUniqueUsers: number;
+    peakHourlyViews: number;
     premiumUsers: number;
     monthlyActiveUsers: number;
     totalViews: number;
   };
   topPages: { name: string; value: number }[];
-  topUsers: { name: string; value: number }[]; // New Top Users Ranking
+  topUsers: { name: string; value: number; isPremium?: boolean }[]; // New Top Users Ranking
   activityData: { name: string; usuarios: number; vistas: number }[];
   timelineEvents: {
     id: string;
@@ -51,6 +52,7 @@ export interface DashboardData {
     date: string;
     details: string;
     meta?: string;
+    isPremium?: boolean;
   }[];
 }
 

@@ -188,17 +188,15 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
         created_at: e.ts || new Date().toISOString()
     }));
 
-    // --- 2. Users Count (Total DB) ---
-    // User counts are usually total regardless of time filter for the KPI "Total Users"
-    const { count: totalUsersCount } = await supabase
-      .from('usuarios')
-      .select('id', { count: 'exact', head: true });
-
-    // --- 3. Premium Count (Total DB) ---
-    const { count: totalActivePremiumCount } = await supabase
+    // --- 2. Premium Count (Total DB) + Active Chapa Set ---
+    const { data: premiumRows, count: totalActivePremiumCount } = await supabase
       .from('usuarios_premium')
-      .select('id', { count: 'exact', head: true })
+      .select('chapa', { count: 'exact' })
       .eq('estado', 'active');
+    const premiumChapas = new Set<string>();
+    (premiumRows || []).forEach((p: any) => {
+      if (p.chapa) premiumChapas.add(String(p.chapa));
+    });
 
     // --- Calculations based on Filtered Events ---
 
@@ -233,7 +231,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
 
     // Convert Users Map to Array (Top 10)
     const topUsers = Object.entries(userActivityCounts)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ name, value, isPremium: premiumChapas.has(String(name)) }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
 
@@ -267,6 +265,26 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
         vistas: d.views
       }));
 
+    // --- Peak Hourly Unique Users (Filtered Range) ---
+    const hourlyMap: Record<string, Set<string>> = {};
+    const hourlyViewsMap: Record<string, number> = {};
+    safeEvents.forEach(v => {
+      const d = new Date(v.created_at);
+      if (isNaN(d.getTime())) return;
+      const bucket = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours());
+      const key = String(bucket.getTime());
+      hourlyViewsMap[key] = (hourlyViewsMap[key] || 0) + 1;
+      if (!v.user_id || v.user_id === 'anon') return;
+      if (!hourlyMap[key]) hourlyMap[key] = new Set();
+      hourlyMap[key].add(v.user_id);
+    });
+    const peakHourlyUniqueUsers = Object.values(hourlyMap).reduce((max, set) => {
+      return Math.max(max, set.size);
+    }, 0);
+    const peakHourlyViews = Object.values(hourlyViewsMap).reduce((max, value) => {
+      return Math.max(max, value);
+    }, 0);
+
     const last24Threshold = Date.now() - 24 * 60 * 60 * 1000;
     const last24Events = (events || []).filter((e: any) => {
       const tsValue = new Date(e.ts || e.created_at || '').getTime();
@@ -279,12 +297,14 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       type: 'page_view',
       date: e.ts,
       details: e.chapa ? `${e.chapa}` : 'Anonimo',
-      meta: e.page || '/'
+      meta: e.page || '/',
+      isPremium: e.chapa ? premiumChapas.has(String(e.chapa)) : false
     }));
 
     return {
       kpi: {
-        totalUsers: totalUsersCount || 0,
+        peakHourlyUniqueUsers,
+        peakHourlyViews,
         premiumUsers: totalActivePremiumCount || 0,
         monthlyActiveUsers: uniqueUserIds.size, // This is now "Unique Users in Range"
         totalViews: totalViewsCount || safeEvents.length
