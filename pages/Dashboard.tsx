@@ -113,7 +113,7 @@ export const Dashboard: React.FC = () => {
       ) : (
         <>
           {/* KPI Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
             <StatCard 
               title={`Usuarios Diferentes (${timeFilter})`}
               value={data.kpi.monthlyActiveUsers} 
@@ -141,6 +141,13 @@ export const Dashboard: React.FC = () => {
               subtext="Max. vistas en una hora"
               icon={<Eye size={24} />}
               color="bg-indigo-600"
+            />
+            <StatCard
+              title="Usuarios medios / hora"
+              value={data.kpi.averageHourlyUsers}
+              subtext={`Promedio por hora (${getTimeLabel()})`}
+              icon={<Users size={24} />}
+              color="bg-teal-600"
             />
             <StatCard
               title="Premium Activos"

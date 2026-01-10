@@ -137,13 +137,6 @@ export const fetchActiveSubscriptions = async (): Promise<PremiumSubscription[]>
 export const fetchDashboardData = async (timeFilter: string = '30d') => {
   try {
     // --- 1. Page Events (Filtered by Time) ---
-    let query = supabase
-      .from('page_events')
-      .select('*')
-      .order('ts', { ascending: false })
-      .limit(5000);
-
-    // Apply Time Filter Logic
     let thresholdDate: string | null = null;
     if (timeFilter !== 'all') {
       const now = new Date();
@@ -151,14 +144,44 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       if (timeFilter === '1d') subtractDays = 1;
       if (timeFilter === '3d') subtractDays = 3;
       if (timeFilter === '7d') subtractDays = 7;
-      
+
       thresholdDate = new Date(now.setDate(now.getDate() - subtractDays)).toISOString();
-      query = query.gte('ts', thresholdDate);
     }
 
-    let { data: events, error: eventsError } = await query;
+    const fetchEventsInRange = async (since: string | null) => {
+      const pageSize = 1000;
+      let from = 0;
+      const allEvents: any[] = [];
 
-    if (eventsError) console.warn("Error reading 'page_events':", eventsError); 
+      while (true) {
+        let eventsQuery = supabase
+          .from('page_events')
+          .select('*')
+          .order('ts', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (since) {
+          eventsQuery = eventsQuery.gte('ts', since);
+        }
+
+        const { data, error } = await eventsQuery;
+        if (error) {
+          console.warn("Error reading 'page_events':", error);
+          break;
+        }
+
+        if (!data || data.length === 0) break;
+        allEvents.push(...data);
+
+        if (data.length < pageSize) break;
+        from += pageSize;
+
+      }
+
+      return allEvents;
+    };
+
+    const events = await fetchEventsInRange(thresholdDate);
 
     const baseCountQuery = supabase
       .from('page_events')
@@ -218,11 +241,17 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
     };
 
     // Map events for safe usage
-    const safeEvents = (events || []).map((e: any) => ({
-        path: e.page || '/',
-        user_id: e.chapa ? String(e.chapa) : 'anon',
-        created_at: e.ts || new Date().toISOString()
-    }));
+    const safeEvents = (events || [])
+      .map((e: any) => {
+        const timestamp = e.ts || e.created_at || e.inserted_at;
+        if (!timestamp) return null;
+        return {
+          path: e.page || '/',
+          user_id: e.chapa ? String(e.chapa) : 'anon',
+          created_at: timestamp
+        };
+      })
+      .filter(Boolean) as { path: string; user_id: string; created_at: string }[];
 
     // --- 2. Premium Count (Total DB) + Active Chapa Set ---
     const { data: premiumRows, count: totalActivePremiumCount } = await supabase
@@ -321,6 +350,19 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       return Math.max(max, value);
     }, 0);
 
+    const nowMs = Date.now();
+    const earliestEventMs = safeEvents.reduce((min, event) => {
+      const ts = new Date(event.created_at).getTime();
+      if (Number.isNaN(ts)) return min;
+      return Math.min(min, ts);
+    }, Number.POSITIVE_INFINITY);
+    const periodStartMs = thresholdDate
+      ? new Date(thresholdDate).getTime()
+      : Number.isFinite(earliestEventMs) ? earliestEventMs : nowMs;
+    const hoursInRange = Math.max(1, Math.ceil((nowMs - periodStartMs) / (1000 * 60 * 60)));
+    const totalHourlyUniqueUsers = Object.values(hourlyMap).reduce((sum, set) => sum + set.size, 0);
+    const averageHourlyUsers = Number((totalHourlyUniqueUsers / hoursInRange).toFixed(1));
+
     const last24Threshold = Date.now() - 24 * 60 * 60 * 1000;
     const last24Events = (events || []).filter((e: any) => {
       const tsValue = new Date(e.ts || e.created_at || '').getTime();
@@ -341,6 +383,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       kpi: {
         peakHourlyUniqueUsers,
         peakHourlyViews,
+        averageHourlyUsers,
         premiumUsers: totalActivePremiumCount || 0,
         monthlyActiveUsers: uniqueUsersCount, // This is now "Unique Users in Range"
         totalViews: totalViewsCount || safeEvents.length

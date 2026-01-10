@@ -39,6 +39,7 @@ export interface DashboardData {
   kpi: {
     peakHourlyUniqueUsers: number;
     peakHourlyViews: number;
+    averageHourlyUsers: number;
     premiumUsers: number;
     monthlyActiveUsers: number;
     totalViews: number;
