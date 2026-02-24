@@ -57,8 +57,15 @@ export interface DashboardData {
   }[];
 }
 
+export interface DescansosUsageRow {
+  chapa: string;
+  ultima_actualizacion: string;
+  seccion: string | null;
+}
+
 export type PageView = 
   | 'DASHBOARD' 
   | 'USUARIOS' 
   | 'PREMIUM' 
-  | 'CONFIGURACION';
+  | 'CONFIGURACION'
+  | 'DESCANSOS';

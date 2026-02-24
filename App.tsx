@@ -4,10 +4,11 @@ import { Dashboard } from './pages/Dashboard';
 import { UsersPage } from './pages/Users';
 import { PremiumPage } from './pages/Premium';
 import { ConfigPage } from './pages/Config';
+import { DescansosPage } from './pages/Descansos';
 import { PageView, UserRole } from './types';
 
 const PAGE_STORAGE_KEY = 'panel-admin:last-page';
-const PAGE_VIEWS: PageView[] = ['DASHBOARD', 'USUARIOS', 'PREMIUM', 'CONFIGURACION'];
+const PAGE_VIEWS: PageView[] = ['DASHBOARD', 'USUARIOS', 'PREMIUM', 'DESCANSOS', 'CONFIGURACION'];
 
 const getInitialPage = (): PageView => {
   if (typeof window === 'undefined') return 'DASHBOARD';
@@ -47,6 +48,7 @@ const App: React.FC = () => {
       case 'DASHBOARD': return <Dashboard />;
       case 'USUARIOS': return <UsersPage />;
       case 'PREMIUM': return <PremiumPage />;
+      case 'DESCANSOS': return <DescansosPage />;
       case 'CONFIGURACION': return <ConfigPage />;
       default: return <Dashboard />;
     }
