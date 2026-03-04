@@ -240,6 +240,53 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       return uniqueUsers.size;
     };
 
+    const fetchFirstTimeUsersInRange = async (since: string | null) => {
+      const firstSeenByChapa = new Map<string, string>();
+      const pageSize = 1000;
+      let from = 0;
+
+      while (true) {
+        const { data, error } = await supabase
+          .from('page_events')
+          .select('chapa, ts')
+          .order('ts', { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (error) {
+          console.warn("Error fetching first-time users:", error);
+          break;
+        }
+
+        if (!data || data.length === 0) break;
+
+        for (const row of data) {
+          const chapa = row.chapa ? String(row.chapa) : '';
+          const ts = row.ts ? String(row.ts) : '';
+          if (!chapa || chapa === 'anon' || !ts) continue;
+
+          // Ascending scan: first write is the true first access timestamp.
+          if (!firstSeenByChapa.has(chapa)) {
+            firstSeenByChapa.set(chapa, ts);
+          }
+        }
+
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+
+      const sinceMs = since ? new Date(since).getTime() : null;
+      const rows = Array.from(firstSeenByChapa.entries())
+        .map(([chapa, firstAccess]) => ({ chapa, firstAccess }))
+        .filter((row) => {
+          if (sinceMs === null) return true;
+          const tsMs = new Date(row.firstAccess).getTime();
+          return !Number.isNaN(tsMs) && tsMs >= sinceMs;
+        })
+        .sort((a, b) => new Date(b.firstAccess).getTime() - new Date(a.firstAccess).getTime());
+
+      return rows;
+    };
+
     // Map events for safe usage
     const safeEvents = (events || [])
       .map((e: any) => {
@@ -267,6 +314,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
 
     // Unique Users in the time range (not limited by the events page size)
     const uniqueUsersCount = await fetchUniqueUsersCount(thresholdDate);
+    const firstTimeUsersInRange = await fetchFirstTimeUsersInRange(thresholdDate);
 
     // Rank Pages (in the time range)
     const pageCounts: Record<string, number> = {};
@@ -386,10 +434,16 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
         averageHourlyUsers,
         premiumUsers: totalActivePremiumCount || 0,
         monthlyActiveUsers: uniqueUsersCount, // This is now "Unique Users in Range"
+        firstTimeNewUsers: firstTimeUsersInRange.length,
         totalViews: totalViewsCount || safeEvents.length
       },
       topPages: allPages,
       topUsers, // New Data
+      newUsersFirstAccess: firstTimeUsersInRange.slice(0, 50).map((row) => ({
+        chapa: row.chapa,
+        firstAccess: row.firstAccess,
+        isPremium: premiumChapas.has(row.chapa)
+      })),
       activityData,
       timelineEvents
     };

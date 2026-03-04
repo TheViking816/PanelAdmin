@@ -42,10 +42,12 @@ export interface DashboardData {
     averageHourlyUsers: number;
     premiumUsers: number;
     monthlyActiveUsers: number;
+    firstTimeNewUsers: number;
     totalViews: number;
   };
   topPages: { name: string; value: number }[];
   topUsers: { name: string; value: number; isPremium?: boolean }[]; // New Top Users Ranking
+  newUsersFirstAccess: { chapa: string; firstAccess: string; isPremium?: boolean }[];
   activityData: { name: string; usuarios: number; vistas: number }[];
   timelineEvents: {
     id: string;

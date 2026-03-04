@@ -113,13 +113,20 @@ export const Dashboard: React.FC = () => {
       ) : (
         <>
           {/* KPI Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
             <StatCard 
               title={`Usuarios Diferentes (${timeFilter})`}
               value={data.kpi.monthlyActiveUsers} 
               subtext="Han accedido a la PWA"
               icon={<Activity size={24} />}
               color="bg-indigo-600"
+            />
+            <StatCard
+              title="Nuevos (Primer acceso)"
+              value={data.kpi.firstTimeNewUsers}
+              subtext={`Primer acceso en ${getTimeLabel()}`}
+              icon={<Users size={24} />}
+              color="bg-cyan-600"
             />
             <StatCard
               title="Total Visualizaciones"
@@ -158,8 +165,8 @@ export const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* First Row: Top Users (Left) & Activity Chart (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* First Row: Top Users + New Users + Activity Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Top Users Ranking */}
             <Card title="Usuarios Más Activos" className="min-w-0 h-full">
                <div className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
@@ -194,6 +201,39 @@ export const Dashboard: React.FC = () => {
                    ))
                  )}
                </div>
+            </Card>
+
+            {/* New Users (First Access in Range) */}
+            <Card title="Nuevos Usuarios (Primer acceso)" className="min-w-0 h-full">
+              <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                {data.newUsersFirstAccess.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 text-sm">
+                    Sin primeros accesos en {getTimeLabel().toLowerCase()}
+                  </div>
+                ) : (
+                  data.newUsersFirstAccess.map((user, idx) => (
+                    <div
+                      key={`${user.chapa}-${user.firstAccess}-${idx}`}
+                      className="flex items-start justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
+                            {user.chapa}
+                          </span>
+                          {user.isPremium && <Badge color="yellow">Premium</Badge>}
+                        </div>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Primer acceso
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-mono text-right whitespace-nowrap">
+                        {new Date(user.firstAccess).toLocaleDateString()} {new Date(user.firstAccess).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </Card>
 
             {/* Main Chart: Activity */}
