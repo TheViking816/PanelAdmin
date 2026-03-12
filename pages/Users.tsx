@@ -98,7 +98,7 @@ export const UsersPage: React.FC = () => {
         </Button>
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="min-w-0">
         <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
           <div className="relative w-full md:max-w-md">
             <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
@@ -112,8 +112,8 @@ export const UsersPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+        <div className="w-full overflow-x-auto overscroll-x-contain">
+          <table className="min-w-[1180px] w-full divide-y divide-slate-200 dark:divide-slate-700">
             <thead className="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
               <tr>
                 <SortableHeader label="Usuario" sortKey="nombre" currentSort={sortConfig} onSort={handleSort} />
