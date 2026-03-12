@@ -6,6 +6,13 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const normalizePageName = (page: string | null | undefined): string => {
+  const rawPage = String(page || '').trim().toLowerCase();
+  if (!rawPage || rawPage === '/home') return '/';
+  if (rawPage === 'calculadora') return 'oraculo';
+  return rawPage;
+};
+
 /**
  * Fetch users from 'usuarios' table and cross-reference with 'usuarios_premium'
  */
@@ -291,7 +298,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
         const timestamp = e.ts || e.created_at || e.inserted_at;
         if (!timestamp) return null;
         return {
-          path: e.page || '/',
+          path: normalizePageName(e.page || '/'),
           user_id: e.chapa ? String(e.chapa) : 'anon',
           created_at: timestamp
         };
@@ -334,8 +341,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
     safeEvents.forEach(v => {
       // 1. Pages
       let path = v.path;
-      if (path && path.includes('?')) path = path.split('?')[0];
-      if (path === '/home' || path === '') path = '/';
+      if (path && path.includes('?')) path = normalizePageName(path.split('?')[0]);
       if (path) pageCounts[path] = (pageCounts[path] || 0) + 1;
 
       // 2. Users Activity
@@ -434,7 +440,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       type: 'page_view',
       date: e.ts,
       details: e.chapa ? `${e.chapa}` : 'Anonimo',
-      meta: e.page || '/',
+      meta: normalizePageName(e.page || '/'),
       isPremium: e.chapa ? premiumChapas.has(String(e.chapa)) : false
     }));
 
