@@ -11,38 +11,35 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
  */
 export const fetchUsers = async (): Promise<UserProfile[]> => {
   try {
-    // 1. Fetch Basic User Data
     const { data: usersData, error: usersError } = await supabase
       .from('usuarios')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(1000);
+      .order('updated_at', { ascending: false })
+      .limit(2000);
 
     if (usersError) {
       console.warn("Error fetching 'usuarios':", usersError);
       return [];
     }
 
-    // 2. Fetch Premium Data to check status (All active premiums)
-    // REMOVED user_id from selection as it does not exist in the table
     const { data: premiumData } = await supabase
       .from('usuarios_premium')
       .select('chapa, estado')
       .eq('estado', 'active'); 
 
-    // Create sets for fast lookup (Check ONLY Chapa)
     const premiumChapas = new Set<string>();
     
     (premiumData || []).forEach((p: any) => {
       if (p.chapa) premiumChapas.add(String(p.chapa));
     });
 
-    // 3. Map and Merge
     return (usersData || []).map((u: any) => {
       const userId = String(u.id);
       const userChapa = u.chapa ? String(u.chapa) : '';
-      
-      // Determine premium status: Check Chapa match
+      const hasNombre = typeof u.nombre === 'string' && u.nombre.trim().length > 0;
+      const hasEmail = typeof u.email === 'string' && u.email.trim().length > 0;
+      const hasPassword = typeof u.password_hash === 'string' && u.password_hash.trim().length > 0;
+      const registroEstado = hasNombre && hasEmail && hasPassword ? 'REGISTRADO' : 'PENDIENTE';
       const isPremium = userChapa && premiumChapas.has(userChapa);
 
       return {
@@ -51,8 +48,9 @@ export const fetchUsers = async (): Promise<UserProfile[]> => {
         nombre: u.nombre || u.full_name || 'Sin Nombre',
         email: u.email || 'No Email',
         rol: u.rol || 'USER',
-        estado: u.estado || 'ACTIVO',
-        premium: !!isPremium, // Boolean enforcement
+        estado: u.activo === false ? 'INACTIVO' : 'ACTIVO',
+        registro_estado: registroEstado,
+        premium: !!isPremium,
         last_seen: u.ultimo_acceso || u.last_sign_in_at || u.created_at,
         created_at: u.created_at,
         updated_at: u.updated_at || u.created_at
@@ -310,6 +308,19 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       if (p.chapa) premiumChapas.add(String(p.chapa));
     });
 
+    const { data: latestRegisteredRows, error: latestRegisteredError } = await supabase
+      .from('usuarios')
+      .select('chapa, nombre, email, updated_at, created_at, password_hash')
+      .not('nombre', 'is', null)
+      .not('email', 'is', null)
+      .not('password_hash', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(12);
+
+    if (latestRegisteredError) {
+      console.warn("Error fetching latest completed registrations:", latestRegisteredError);
+    }
+
     // --- Calculations based on Filtered Events ---
 
     // Unique Users in the time range (not limited by the events page size)
@@ -443,6 +454,13 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
         chapa: row.chapa,
         firstAccess: row.firstAccess,
         isPremium: premiumChapas.has(row.chapa)
+      })),
+      latestCompletedRegistrations: (latestRegisteredRows || []).map((row: any) => ({
+        chapa: String(row.chapa || ''),
+        nombre: row.nombre || 'Sin nombre',
+        email: row.email || 'Sin email',
+        updated_at: row.updated_at || row.created_at || new Date().toISOString(),
+        isPremium: row.chapa ? premiumChapas.has(String(row.chapa)) : false
       })),
       activityData,
       timelineEvents

@@ -165,7 +165,7 @@ export const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* First Row: Top Users + New Users + Activity Chart */}
+          {/* First Row: Top Users + New Users + Recent Registrations + Activity Chart */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Top Users Ranking */}
             <Card title="Usuarios Más Activos" className="min-w-0 h-full">
@@ -236,8 +236,40 @@ export const Dashboard: React.FC = () => {
               </div>
             </Card>
 
+            <Card title="Ultimos Registros Completados" className="min-w-0 h-full">
+              <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                {data.latestCompletedRegistrations.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 text-sm">
+                    Sin registros completados recientes
+                  </div>
+                ) : (
+                  data.latestCompletedRegistrations.map((user, idx) => (
+                    <div
+                      key={`${user.chapa}-${user.updated_at}-${idx}`}
+                      className="flex items-start justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
+                            {user.nombre}
+                          </span>
+                          {user.isPremium && <Badge color="yellow">Premium</Badge>}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {user.chapa} · {user.email}
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-mono text-right whitespace-nowrap">
+                        {new Date(user.updated_at).toLocaleDateString()} {new Date(user.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+
             {/* Main Chart: Activity */}
-            <Card className="lg:col-span-2 min-w-0" title={`Actividad: ${getTimeLabel()}`}>
+            <Card className="lg:col-span-1 min-w-0" title={`Actividad: ${getTimeLabel()}`}>
               <div className="h-80 w-full min-w-0 min-h-[320px] relative">
                 {data.activityData.length > 0 ? (
                   <div style={{ width: '100%', height: '100%', position: 'absolute' }} className="min-w-0 min-h-[320px]">

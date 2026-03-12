@@ -13,10 +13,11 @@ export interface UserProfile {
   email?: string;
   rol?: UserRole | string;
   estado?: string;
+  registro_estado?: 'REGISTRADO' | 'PENDIENTE';
   premium?: boolean;
   last_seen?: string;
   created_at: string;
-  updated_at?: string; // New field
+  updated_at?: string;
 }
 
 export interface PremiumSubscription {
@@ -48,6 +49,13 @@ export interface DashboardData {
   topPages: { name: string; value: number }[];
   topUsers: { name: string; value: number; isPremium?: boolean }[]; // New Top Users Ranking
   newUsersFirstAccess: { chapa: string; firstAccess: string; isPremium?: boolean }[];
+  latestCompletedRegistrations: {
+    chapa: string;
+    nombre: string;
+    email: string;
+    updated_at: string;
+    isPremium?: boolean;
+  }[];
   activityData: { name: string; usuarios: number; vistas: number }[];
   timelineEvents: {
     id: string;
