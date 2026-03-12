@@ -6,7 +6,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const NEW_CHAPAS_CSV_PATH = `${import.meta.env.BASE_URL}censo_nuevas_chapas.csv`;
+const CENSO_BASE_CSV_PATH = `${import.meta.env.BASE_URL}censo_destino.csv`;
+const NEW_CHAPAS_JORNALES_THRESHOLD = '2026-03-12';
 
 const normalizeCsvHeader = (value: string) => value.trim().toLowerCase().replace(/[\s_-]+/g, '');
 
@@ -42,12 +43,12 @@ const parseCsvLine = (line: string) => {
   return values;
 };
 
-const fetchNewChapasFromCsv = async (): Promise<string[]> => {
+const fetchCsvChapas = async (csvPath: string): Promise<string[]> => {
   try {
-    const response = await fetch(`${NEW_CHAPAS_CSV_PATH}?t=${Date.now()}`, { cache: 'no-store' });
+    const response = await fetch(`${csvPath}?t=${Date.now()}`, { cache: 'no-store' });
     if (!response.ok) {
       if (response.status !== 404) {
-        console.warn(`Error loading ${NEW_CHAPAS_CSV_PATH}:`, response.status, response.statusText);
+        console.warn(`Error loading ${csvPath}:`, response.status, response.statusText);
       }
       return [];
     }
@@ -63,7 +64,7 @@ const fetchNewChapasFromCsv = async (): Promise<string[]> => {
     const headers = parseCsvLine(lines[0]).map(normalizeCsvHeader);
     const chapaIndex = headers.findIndex((header) => header === 'chapa');
     if (chapaIndex === -1) {
-      console.warn(`${NEW_CHAPAS_CSV_PATH} must contain a 'chapa' column.`);
+      console.warn(`${csvPath} must contain a 'chapa' column.`);
       return [];
     }
 
@@ -78,9 +79,67 @@ const fetchNewChapasFromCsv = async (): Promise<string[]> => {
 
     return [...chapas];
   } catch (error) {
-    console.warn(`Exception loading ${NEW_CHAPAS_CSV_PATH}:`, error);
+    console.warn(`Exception loading ${csvPath}:`, error);
     return [];
   }
+};
+
+const fetchPaginatedChapas = async (
+  table: string,
+  configureQuery?: (query: any) => any
+): Promise<string[]> => {
+  try {
+    const pageSize = 1000;
+    let from = 0;
+    const rows: string[] = [];
+
+    while (true) {
+      let query = supabase
+        .from(table)
+        .select('chapa')
+        .not('chapa', 'is', null)
+        .order('chapa', { ascending: true })
+        .range(from, from + pageSize - 1);
+
+      if (configureQuery) {
+        query = configureQuery(query);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.warn(`Error fetching chapas from '${table}':`, error);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+
+      rows.push(...data.map((row: any) => String(row.chapa)).filter(Boolean));
+
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return [...new Set(rows)];
+  } catch (error) {
+    console.warn(`Exception fetching chapas from '${table}':`, error);
+    return [];
+  }
+};
+
+const fetchDerivedNewChapas = async (): Promise<string[]> => {
+  const [baseCensoChapas, currentCensoChapas, historicalJornalChapas] = await Promise.all([
+    fetchCsvChapas(CENSO_BASE_CSV_PATH),
+    fetchPaginatedChapas('censo'),
+    fetchPaginatedChapas('jornales', (query) => query.lt('fecha', NEW_CHAPAS_JORNALES_THRESHOLD)),
+  ]);
+
+  const baseSet = new Set(baseCensoChapas);
+  const historicalJornalSet = new Set(historicalJornalChapas);
+
+  return currentCensoChapas
+    .filter((chapa) => !baseSet.has(chapa))
+    .filter((chapa) => !historicalJornalSet.has(chapa))
+    .sort((a, b) => Number(a) - Number(b));
 };
 
 const normalizePageName = (page: string | null | undefined): string => {
@@ -404,7 +463,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
     if (latestRegisteredError) {
       console.warn("Error fetching latest completed registrations:", latestRegisteredError);
     }
-    const newChapas = await fetchNewChapasFromCsv();
+    const newChapas = await fetchDerivedNewChapas();
 
     // --- Calculations based on Filtered Events ---
 
