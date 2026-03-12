@@ -37,6 +37,7 @@ export interface PremiumSubscription {
 }
 
 export interface DashboardData {
+  newChapas: string[];
   kpi: {
     peakHourlyUniqueUsers: number;
     peakHourlyViews: number;

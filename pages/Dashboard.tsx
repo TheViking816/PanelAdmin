@@ -7,13 +7,6 @@ import { Users, Eye, Zap, Activity, Monitor, Globe, Calendar, Crown } from 'luci
 import { DashboardData } from '../types';
 import { fetchDashboardData } from '../services/supabaseClient';
 
-const NEW_CHAPAS = new Set([
-  '813', '944', '413', '943', '426', '762', '774', '456', '767', '430',
-  '765', '764', '429', '761', '400', '824', '506', '455', '825', '462',
-  '464', '468', '125', '782', '503', '470', '856', '476', '479', '837',
-  '485', '486', '491', '497', '507'
-]);
-
 const StatCard: React.FC<{ title: string; value: string | number; subtext?: string; icon: React.ReactNode; color: string }> = ({ title, value, subtext, icon, color }) => (
   <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-start justify-between">
     <div>
@@ -63,7 +56,7 @@ export const Dashboard: React.FC = () => {
 
   const isNewChapa = (value: string | null | undefined) => {
     const chapa = String(value || '').trim();
-    return chapa.length > 0 && NEW_CHAPAS.has(chapa);
+    return chapa.length > 0 && !!data?.newChapas?.includes(chapa);
   };
 
   const getTimelineEvents = () => {
