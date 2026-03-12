@@ -42,30 +42,7 @@ const parseCsvLine = (line: string) => {
   return values;
 };
 
-const parseCsvDate = (value: string | null | undefined): Date | null => {
-  const raw = String(value || '').trim();
-  if (!raw) return null;
-
-  const isoDate = new Date(raw);
-  if (!Number.isNaN(isoDate.getTime())) return isoDate;
-
-  const match = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (!match) return null;
-
-  const day = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  const year = Number(match[3]);
-  const parsed = new Date(year, month, day);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const isSameLocalDay = (left: Date, right: Date) => (
-  left.getFullYear() === right.getFullYear() &&
-  left.getMonth() === right.getMonth() &&
-  left.getDate() === right.getDate()
-);
-
-const fetchTodayNewChapasFromCsv = async (): Promise<string[]> => {
+const fetchNewChapasFromCsv = async (): Promise<string[]> => {
   try {
     const response = await fetch(`${NEW_CHAPAS_CSV_PATH}?t=${Date.now()}`, { cache: 'no-store' });
     if (!response.ok) {
@@ -85,25 +62,18 @@ const fetchTodayNewChapasFromCsv = async (): Promise<string[]> => {
 
     const headers = parseCsvLine(lines[0]).map(normalizeCsvHeader);
     const chapaIndex = headers.findIndex((header) => header === 'chapa');
-    const fechaIndex = headers.findIndex((header) => ['fecha', 'fechalta', 'altafecha', 'createdat', 'addedat', 'dia'].includes(header));
-
-    if (chapaIndex === -1 || fechaIndex === -1) {
-      console.warn(`${NEW_CHAPAS_CSV_PATH} must contain 'chapa' and 'fecha' columns.`);
+    if (chapaIndex === -1) {
+      console.warn(`${NEW_CHAPAS_CSV_PATH} must contain a 'chapa' column.`);
       return [];
     }
 
-    const today = new Date();
     const chapas = new Set<string>();
 
     for (const line of lines.slice(1)) {
       const values = parseCsvLine(line);
       const chapa = String(values[chapaIndex] || '').trim();
-      const fecha = parseCsvDate(values[fechaIndex]);
-
-      if (!chapa || !fecha) continue;
-      if (isSameLocalDay(fecha, today)) {
-        chapas.add(chapa);
-      }
+      if (!chapa) continue;
+      chapas.add(chapa);
     }
 
     return [...chapas];
@@ -434,7 +404,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
     if (latestRegisteredError) {
       console.warn("Error fetching latest completed registrations:", latestRegisteredError);
     }
-    const newChapas = await fetchTodayNewChapasFromCsv();
+    const newChapas = await fetchNewChapasFromCsv();
 
     // --- Calculations based on Filtered Events ---
 
