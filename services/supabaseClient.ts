@@ -5,7 +5,14 @@ const SUPABASE_URL = 'https://icszzxkdxatfytpmoviq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljc3p6eGtkeGF0Znl0cG1vdmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2Mzk2NjUsImV4cCI6MjA3ODIxNTY2NX0.hmQWNB3sCyBh39gdNgQLjjlIvliwJje-OYf0kkPObVA';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const NEW_CHAPA_POSITION_START = 449;
+// Diferencia calculada entre la tabla `censo` actual de Supabase
+// y el snapshot base `censo_destino.csv`.
+const NEW_CHAPAS_FROM_CENSO_DESTINO = [
+  '127', '760', '761', '762', '764', '765', '766', '767', '770', '774',
+  '775', '776', '778', '782', '784', '786', '789', '790', '795', '797',
+  '798', '800', '802', '804', '806', '810', '813', '824', '825', '829',
+  '837', '838', '856', '943', '944'
+];
 
 const normalizePageName = (page: string | null | undefined): string => {
   const rawPage = String(page || '').trim().toLowerCase();
@@ -316,34 +323,19 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       if (p.chapa) premiumChapas.add(String(p.chapa));
     });
 
-    const [
-      { data: latestRegisteredRows, error: latestRegisteredError },
-      { data: newCensoRows, error: newCensoError }
-    ] = await Promise.all([
-      supabase
-        .from('usuarios')
-        .select('chapa, nombre, email, updated_at, created_at, password_hash')
-        .not('nombre', 'is', null)
-        .not('email', 'is', null)
-        .not('password_hash', 'is', null)
-        .order('updated_at', { ascending: false })
-        .limit(12),
-      supabase
-        .from('censo')
-        .select('chapa, posicion')
-        .gte('posicion', NEW_CHAPA_POSITION_START)
-        .order('posicion', { ascending: true })
-    ]);
+    const { data: latestRegisteredRows, error: latestRegisteredError } = await supabase
+      .from('usuarios')
+      .select('chapa, nombre, email, updated_at, created_at, password_hash')
+      .not('nombre', 'is', null)
+      .not('email', 'is', null)
+      .not('password_hash', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(12);
 
     if (latestRegisteredError) {
       console.warn("Error fetching latest completed registrations:", latestRegisteredError);
     }
-    if (newCensoError) {
-      console.warn("Error fetching new chapas from censo:", newCensoError);
-    }
-    const newChapas = (newCensoRows || [])
-      .map((row: any) => String(row.chapa || '').trim())
-      .filter(Boolean);
+    const newChapas = [...NEW_CHAPAS_FROM_CENSO_DESTINO];
 
     // --- Calculations based on Filtered Events ---
 
