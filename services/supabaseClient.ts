@@ -5,14 +5,113 @@ const SUPABASE_URL = 'https://icszzxkdxatfytpmoviq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljc3p6eGtkeGF0Znl0cG1vdmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2Mzk2NjUsImV4cCI6MjA3ODIxNTY2NX0.hmQWNB3sCyBh39gdNgQLjjlIvliwJje-OYf0kkPObVA';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-// Diferencia calculada entre la tabla `censo` actual de Supabase
-// y el snapshot base `censo_destino.csv`.
-const NEW_CHAPAS_FROM_CENSO_DESTINO = [
-  '127', '760', '761', '762', '764', '765', '766', '767', '770', '774',
-  '775', '776', '778', '782', '784', '786', '789', '790', '795', '797',
-  '798', '800', '802', '804', '806', '810', '813', '824', '825', '829',
-  '837', '838', '856', '943', '944'
-];
+
+const NEW_CHAPAS_CSV_PATH = '/censo_nuevas_chapas.csv';
+
+const normalizeCsvHeader = (value: string) => value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+
+const parseCsvLine = (line: string) => {
+  const values: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current.trim());
+  return values;
+};
+
+const parseCsvDate = (value: string | null | undefined): Date | null => {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  const isoDate = new Date(raw);
+  if (!Number.isNaN(isoDate.getTime())) return isoDate;
+
+  const match = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const year = Number(match[3]);
+  const parsed = new Date(year, month, day);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const isSameLocalDay = (left: Date, right: Date) => (
+  left.getFullYear() === right.getFullYear() &&
+  left.getMonth() === right.getMonth() &&
+  left.getDate() === right.getDate()
+);
+
+const fetchTodayNewChapasFromCsv = async (): Promise<string[]> => {
+  try {
+    const response = await fetch(`${NEW_CHAPAS_CSV_PATH}?t=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) {
+      if (response.status !== 404) {
+        console.warn(`Error loading ${NEW_CHAPAS_CSV_PATH}:`, response.status, response.statusText);
+      }
+      return [];
+    }
+
+    const csvText = await response.text();
+    const lines = csvText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (lines.length < 2) return [];
+
+    const headers = parseCsvLine(lines[0]).map(normalizeCsvHeader);
+    const chapaIndex = headers.findIndex((header) => header === 'chapa');
+    const fechaIndex = headers.findIndex((header) => ['fecha', 'fechalta', 'altafecha', 'createdat', 'addedat', 'dia'].includes(header));
+
+    if (chapaIndex === -1 || fechaIndex === -1) {
+      console.warn(`${NEW_CHAPAS_CSV_PATH} must contain 'chapa' and 'fecha' columns.`);
+      return [];
+    }
+
+    const today = new Date();
+    const chapas = new Set<string>();
+
+    for (const line of lines.slice(1)) {
+      const values = parseCsvLine(line);
+      const chapa = String(values[chapaIndex] || '').trim();
+      const fecha = parseCsvDate(values[fechaIndex]);
+
+      if (!chapa || !fecha) continue;
+      if (isSameLocalDay(fecha, today)) {
+        chapas.add(chapa);
+      }
+    }
+
+    return [...chapas];
+  } catch (error) {
+    console.warn(`Exception loading ${NEW_CHAPAS_CSV_PATH}:`, error);
+    return [];
+  }
+};
 
 const normalizePageName = (page: string | null | undefined): string => {
   const rawPage = String(page || '').trim().toLowerCase();
@@ -335,7 +434,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
     if (latestRegisteredError) {
       console.warn("Error fetching latest completed registrations:", latestRegisteredError);
     }
-    const newChapas = [...NEW_CHAPAS_FROM_CENSO_DESTINO];
+    const newChapas = await fetchTodayNewChapasFromCsv();
 
     // --- Calculations based on Filtered Events ---
 
