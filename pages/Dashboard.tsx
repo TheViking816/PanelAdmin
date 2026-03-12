@@ -7,6 +7,13 @@ import { Users, Eye, Zap, Activity, Monitor, Globe, Calendar, Crown } from 'luci
 import { DashboardData } from '../types';
 import { fetchDashboardData } from '../services/supabaseClient';
 
+const NEW_CHAPAS = new Set([
+  '813', '944', '413', '943', '426', '762', '774', '456', '767', '430',
+  '765', '764', '429', '761', '400', '824', '506', '455', '825', '462',
+  '464', '468', '125', '782', '503', '470', '856', '476', '479', '837',
+  '485', '486', '491', '497', '507'
+]);
+
 const StatCard: React.FC<{ title: string; value: string | number; subtext?: string; icon: React.ReactNode; color: string }> = ({ title, value, subtext, icon, color }) => (
   <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-start justify-between">
     <div>
@@ -18,6 +25,10 @@ const StatCard: React.FC<{ title: string; value: string | number; subtext?: stri
       {icon}
     </div>
   </div>
+);
+
+const NewChapaBadge: React.FC = () => (
+  <Badge color="blue">Nueva</Badge>
 );
 
 export const Dashboard: React.FC = () => {
@@ -41,13 +52,18 @@ export const Dashboard: React.FC = () => {
 
   const getTimeLabel = () => {
     switch (timeFilter) {
-      case '1d': return 'Ãšltimas 24h';
-      case '3d': return 'Ãšltimos 3 dÃ­as';
-      case '7d': return 'Ãšltimos 7 dÃ­as';
-      case '30d': return 'Ãšltimos 30 dÃ­as';
-      case 'all': return 'HistÃ³rico Total';
-      default: return 'Periodo';
+      case '1d': return 'Últimas 24h';
+      case '3d': return 'Últimos 3 días';
+      case '7d': return 'Últimos 7 días';
+      case '30d': return 'Últimos 30 días';
+      case 'all': return 'Histórico total';
+      default: return 'Período';
     }
+  };
+
+  const isNewChapa = (value: string | null | undefined) => {
+    const chapa = String(value || '').trim();
+    return chapa.length > 0 && NEW_CHAPAS.has(chapa);
   };
 
   const getTimelineEvents = () => {
@@ -65,9 +81,9 @@ export const Dashboard: React.FC = () => {
       return (event.details || '').toLowerCase().includes(normalized);
     });
 
-    return [...events].sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
+    return [...events].sort((a, b) => (
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    ));
   };
 
   const timelineEvents = getTimelineEvents();
@@ -80,7 +96,7 @@ export const Dashboard: React.FC = () => {
             <Activity size={20} className="text-port-600 dark:text-port-400" />
             Activity Analytics
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">AnalÃ­tica de uso en tiempo real</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Analítica de uso en tiempo real</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
@@ -91,11 +107,11 @@ export const Dashboard: React.FC = () => {
             onChange={(e) => setTimeFilter(e.target.value)}
             className="form-select text-sm border-slate-300 rounded-md shadow-sm focus:border-port-500 focus:ring-port-500 bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 px-3 py-1.5 outline-none border"
           >
-            <option value="1d">Ãšltimas 24 horas</option>
-            <option value="3d">Ãšltimos 3 dÃ­as</option>
-            <option value="7d">Ãšltimos 7 dÃ­as</option>
-            <option value="30d">Ãšltimos 30 dÃ­as</option>
-            <option value="all">HistÃ³rico (Todo)</option>
+            <option value="1d">Últimas 24 horas</option>
+            <option value="3d">Últimos 3 días</option>
+            <option value="7d">Últimos 7 días</option>
+            <option value="30d">Últimos 30 días</option>
+            <option value="all">Histórico (Todo)</option>
           </select>
         </div>
       </div>
@@ -104,7 +120,7 @@ export const Dashboard: React.FC = () => {
         <div className="flex h-96 items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-port-700 dark:border-port-400"></div>
-            <p className="text-slate-400 text-sm">Procesando datos del periodo...</p>
+            <p className="text-slate-400 text-sm">Procesando datos del período...</p>
           </div>
         </div>
       ) : !data ? (
@@ -129,21 +145,21 @@ export const Dashboard: React.FC = () => {
             <StatCard
               title="Total Visualizaciones"
               value={data.kpi.totalViews}
-              subtext={`PÃ¡ginas vistas (${getTimeLabel()})`}
+              subtext={`Páginas vistas (${getTimeLabel()})`}
               icon={<Eye size={24} />}
               color="bg-emerald-500"
             />
             <StatCard
               title="Pico Usuarios Diferentes (1h)"
               value={data.kpi.peakHourlyUniqueUsers}
-              subtext="Max. usuarios distintos en una hora"
+              subtext="Máx. usuarios distintos en una hora"
               icon={<Users size={24} />}
               color="bg-blue-600"
             />
             <StatCard
               title="Pico Visitas (1h)"
               value={data.kpi.peakHourlyViews}
-              subtext="Max. vistas en una hora"
+              subtext="Máx. vistas en una hora"
               icon={<Eye size={24} />}
               color="bg-indigo-600"
             />
@@ -164,7 +180,7 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card title="Usuarios MÃ¡s Activos" className="min-w-0 h-full">
+            <Card title="Usuarios Más Activos" className="min-w-0 h-full">
               <div className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                 {data.topUsers.length === 0 ? (
                   <div className="text-center py-8 text-slate-400 text-sm">Sin actividad registrada</div>
@@ -185,6 +201,7 @@ export const Dashboard: React.FC = () => {
                             <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
                               {user.name}
                             </span>
+                            {isNewChapa(user.name) && <NewChapaBadge />}
                             {user.isPremium && <Badge color="yellow">Premium</Badge>}
                           </div>
                           <span className="text-[10px] text-slate-400 uppercase">Chapa / ID</span>
@@ -216,6 +233,7 @@ export const Dashboard: React.FC = () => {
                           <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
                             {user.chapa}
                           </span>
+                          {isNewChapa(user.chapa) && <NewChapaBadge />}
                           {user.isPremium && <Badge color="yellow">Premium</Badge>}
                         </div>
                         <span className="text-[11px] text-slate-500 dark:text-slate-400">Primer acceso</span>
@@ -229,7 +247,7 @@ export const Dashboard: React.FC = () => {
               </div>
             </Card>
 
-            <Card title="Ultimos Registros Completados" className="min-w-0 h-full">
+            <Card title="Últimos Registros Completados" className="min-w-0 h-full">
               <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                 {data.latestCompletedRegistrations.length === 0 ? (
                   <div className="text-center py-8 text-slate-400 text-sm">Sin registros completados recientes</div>
@@ -244,10 +262,11 @@ export const Dashboard: React.FC = () => {
                           <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
                             {user.nombre}
                           </span>
+                          {isNewChapa(user.chapa) && <NewChapaBadge />}
                           {user.isPremium && <Badge color="yellow">Premium</Badge>}
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                          {user.chapa} Â· {user.email}
+                          {user.chapa} · {user.email}
                         </div>
                       </div>
                       <span className="text-[11px] text-slate-400 font-mono text-right whitespace-nowrap">
@@ -346,7 +365,7 @@ export const Dashboard: React.FC = () => {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card title="Vistas por PÃ¡gina" className="min-w-0">
+            <Card title="Vistas por Página" className="min-w-0">
               <div className="w-full overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
                 {data.topPages.length > 0 ? (
                   <div style={{ height: Math.max(300, data.topPages.length * 35 + 50), width: '100%', minHeight: 300 }} className="min-w-0">
@@ -364,14 +383,14 @@ export const Dashboard: React.FC = () => {
                   </div>
                 ) : (
                   <div className="h-64 flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg">
-                    Sin datos de navegaciÃ³n en este periodo
+                    Sin datos de navegación en este período
                   </div>
                 )}
               </div>
             </Card>
 
             <Card
-              title="Ãšltimos Accesos (En Tiempo Real)"
+              title="Últimos Accesos (En Tiempo Real)"
               className="lg:col-span-2"
               action={
                 <div className="flex items-center gap-2">
@@ -395,13 +414,13 @@ export const Dashboard: React.FC = () => {
             >
               {chapaQuery.trim().length > 0 && (
                 <div className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-                  Historial de las Ãºltimas 24h para la chapa "{chapaQuery.trim()}"
+                  Historial de las últimas 24h para la chapa "{chapaQuery.trim()}"
                 </div>
               )}
               <div className="space-y-0 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
                 {timelineEvents.length === 0 && (
                   <div className="text-center py-8 text-slate-400">
-                    {chapaQuery.trim().length > 0 ? 'Sin accesos en las Ãºltimas 24h para esa chapa' : 'No hay eventos recientes'}
+                    {chapaQuery.trim().length > 0 ? 'Sin accesos en las últimas 24h para esa chapa' : 'No hay eventos recientes'}
                   </div>
                 )}
                 {timelineEvents.map((event, idx) => {
@@ -420,7 +439,7 @@ export const Dashboard: React.FC = () => {
 
                   return (
                     <div key={idx} className="flex gap-4 relative group">
-                      {idx !== data.timelineEvents.length - 1 && (
+                      {idx !== timelineEvents.length - 1 && (
                         <div className="absolute left-[19px] top-8 bottom-[-16px] w-[2px] bg-slate-100 dark:bg-slate-700 group-last:hidden"></div>
                       )}
 
@@ -435,6 +454,7 @@ export const Dashboard: React.FC = () => {
                           <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                             {event.details}
                           </p>
+                          {isNewChapa(event.details) && <NewChapaBadge />}
                           {event.isPremium && <Badge color="yellow">Premium</Badge>}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
