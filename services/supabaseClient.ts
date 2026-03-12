@@ -6,8 +6,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const CENSO_BASE_CSV_PATH = `${import.meta.env.BASE_URL}censo_destino.csv`;
-const NEW_CHAPAS_JORNALES_THRESHOLD = '2026-03-12';
+const NEW_CHAPAS_CSV_PATH = `${import.meta.env.BASE_URL}censo_nuevas_chapas.csv`;
 
 const normalizeCsvHeader = (value: string) => value.trim().toLowerCase().replace(/[\s_-]+/g, '');
 
@@ -84,62 +83,9 @@ const fetchCsvChapas = async (csvPath: string): Promise<string[]> => {
   }
 };
 
-const fetchPaginatedChapas = async (
-  table: string,
-  configureQuery?: (query: any) => any
-): Promise<string[]> => {
-  try {
-    const pageSize = 1000;
-    let from = 0;
-    const rows: string[] = [];
-
-    while (true) {
-      let query = supabase
-        .from(table)
-        .select('chapa')
-        .not('chapa', 'is', null)
-        .order('chapa', { ascending: true })
-        .range(from, from + pageSize - 1);
-
-      if (configureQuery) {
-        query = configureQuery(query);
-      }
-
-      const { data, error } = await query;
-      if (error) {
-        console.warn(`Error fetching chapas from '${table}':`, error);
-        break;
-      }
-
-      if (!data || data.length === 0) break;
-
-      rows.push(...data.map((row: any) => String(row.chapa)).filter(Boolean));
-
-      if (data.length < pageSize) break;
-      from += pageSize;
-    }
-
-    return [...new Set(rows)];
-  } catch (error) {
-    console.warn(`Exception fetching chapas from '${table}':`, error);
-    return [];
-  }
-};
-
 const fetchDerivedNewChapas = async (): Promise<string[]> => {
-  const [baseCensoChapas, currentCensoChapas, historicalJornalChapas] = await Promise.all([
-    fetchCsvChapas(CENSO_BASE_CSV_PATH),
-    fetchPaginatedChapas('censo'),
-    fetchPaginatedChapas('jornales', (query) => query.lt('fecha', NEW_CHAPAS_JORNALES_THRESHOLD)),
-  ]);
-
-  const baseSet = new Set(baseCensoChapas);
-  const historicalJornalSet = new Set(historicalJornalChapas);
-
-  return currentCensoChapas
-    .filter((chapa) => !baseSet.has(chapa))
-    .filter((chapa) => !historicalJornalSet.has(chapa))
-    .sort((a, b) => Number(a) - Number(b));
+  const chapas = await fetchCsvChapas(NEW_CHAPAS_CSV_PATH);
+  return chapas.sort((a, b) => Number(a) - Number(b));
 };
 
 const normalizePageName = (page: string | null | undefined): string => {
