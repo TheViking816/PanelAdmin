@@ -7,6 +7,42 @@ import { Users, Eye, Zap, Activity, Monitor, Globe, Calendar, Crown } from 'luci
 import { DashboardData } from '../types';
 import { fetchDashboardData } from '../services/supabaseClient';
 
+const MADRID_TIME_ZONE = 'Europe/Madrid';
+
+const parseSupabaseDate = (value: string) => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return null;
+
+  // `timestamp without time zone` values from Supabase often arrive without an offset.
+  // Treat them as UTC so the rendered hour is consistent in the admin.
+  const hasExplicitOffset = /(?:[zZ]|[+-]\d{2}:\d{2})$/.test(normalized);
+  const candidate = hasExplicitOffset ? normalized : normalized.replace(' ', 'T') + 'Z';
+  const parsed = new Date(candidate);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatMadridDateTime = (value: string) => {
+  const parsed = parseSupabaseDate(value);
+  if (!parsed) return '--';
+
+  const formattedDate = new Intl.DateTimeFormat('es-ES', {
+    timeZone: MADRID_TIME_ZONE,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(parsed);
+
+  const formattedTime = new Intl.DateTimeFormat('es-ES', {
+    timeZone: MADRID_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(parsed);
+
+  return `${formattedDate} ${formattedTime}`;
+};
+
 const StatCard: React.FC<{ title: string; value: string | number; subtext?: string; icon: React.ReactNode; color: string }> = ({ title, value, subtext, icon, color }) => (
   <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-start justify-between">
     <div>
@@ -232,7 +268,7 @@ export const Dashboard: React.FC = () => {
                         <span className="text-[11px] text-slate-500 dark:text-slate-400">Primer acceso</span>
                       </div>
                       <span className="text-[11px] text-slate-400 font-mono text-right whitespace-nowrap">
-                        {new Date(user.firstAccess).toLocaleDateString()} {new Date(user.firstAccess).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {formatMadridDateTime(user.firstAccess)}
                       </span>
                     </div>
                   ))
@@ -263,7 +299,7 @@ export const Dashboard: React.FC = () => {
                         </div>
                       </div>
                       <span className="text-[11px] text-slate-400 font-mono text-right whitespace-nowrap">
-                        {new Date(user.updated_at).toLocaleDateString()} {new Date(user.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {formatMadridDateTime(user.updated_at)}
                       </span>
                     </div>
                   ))
@@ -455,7 +491,7 @@ export const Dashboard: React.FC = () => {
                             {event.meta || '/'}
                           </span>
                           <span className="text-xs text-slate-400 font-mono">
-                            {new Date(event.date).toLocaleDateString()} {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {formatMadridDateTime(event.date)}
                           </span>
                         </div>
                       </div>
