@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button, Badge } from '../components/UI';
 import { Search, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { UserProfile } from '../types';
-import { fetchUsers } from '../services/supabaseClient';
+import { fetchDerivedNewChapas, fetchUsers } from '../services/supabaseClient';
 
 const SortableHeader: React.FC<{
   label: string;
@@ -27,6 +27,7 @@ const SortableHeader: React.FC<{
 
 export const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [newChapas, setNewChapas] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof UserProfile; direction: 'asc' | 'desc' }>({
@@ -36,8 +37,12 @@ export const UsersPage: React.FC = () => {
 
   const loadUsers = async () => {
     setLoading(true);
-    const data = await fetchUsers();
-    setUsers(data);
+    const [usersData, newChapasData] = await Promise.all([
+      fetchUsers(),
+      fetchDerivedNewChapas()
+    ]);
+    setUsers(usersData);
+    setNewChapas(newChapasData);
     setLoading(false);
   };
 
@@ -86,6 +91,18 @@ export const UsersPage: React.FC = () => {
     return result;
   }, [users, searchTerm, sortConfig]);
 
+  const newUsersRegistrationSummary = React.useMemo(() => {
+    const total = newChapas.length;
+    const newChapasSet = new Set(newChapas);
+    const registered = new Set(
+      users
+        .filter((user) => user.registro_estado === 'REGISTRADO' && newChapasSet.has(String(user.chapa || '').trim()))
+        .map((user) => String(user.chapa || '').trim())
+    ).size;
+
+    return { registered, total };
+  }, [newChapas, users]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -100,15 +117,25 @@ export const UsersPage: React.FC = () => {
 
       <Card className="min-w-0">
         <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-          <div className="relative w-full md:max-w-md">
-            <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, email o chapa..."
-              className="pl-10 pr-4 py-2 w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-port-500 focus:border-transparent outline-none transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, email o chapa..."
+                className="pl-10 pr-4 py-2 w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-port-500 focus:border-transparent outline-none transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="self-start md:self-auto rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-right dark:border-emerald-900/60 dark:bg-emerald-950/40">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                Nuevos registrados
+              </div>
+              <div className="text-lg font-bold tabular-nums text-emerald-900 dark:text-emerald-100">
+                {newUsersRegistrationSummary.registered}/{newUsersRegistrationSummary.total}
+              </div>
+            </div>
           </div>
         </div>
 

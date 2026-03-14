@@ -7,6 +7,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const NEW_CHAPAS_CSV_PATH = `${import.meta.env.BASE_URL}censo_nuevas_chapas.csv`;
+const VALID_CHAPA_PATTERN = /^\d{3}$/;
 
 const normalizeCsvHeader = (value: string) => value.trim().toLowerCase().replace(/[\s_-]+/g, '');
 
@@ -72,7 +73,7 @@ const fetchCsvChapas = async (csvPath: string): Promise<string[]> => {
     for (const line of lines.slice(1)) {
       const values = parseCsvLine(line);
       const chapa = String(values[chapaIndex] || '').trim();
-      if (!chapa) continue;
+      if (!VALID_CHAPA_PATTERN.test(chapa)) continue;
       chapas.add(chapa);
     }
 
@@ -83,7 +84,7 @@ const fetchCsvChapas = async (csvPath: string): Promise<string[]> => {
   }
 };
 
-const fetchDerivedNewChapas = async (): Promise<string[]> => {
+export const fetchDerivedNewChapas = async (): Promise<string[]> => {
   const chapas = await fetchCsvChapas(NEW_CHAPAS_CSV_PATH);
   return chapas.sort((a, b) => Number(a) - Number(b));
 };
