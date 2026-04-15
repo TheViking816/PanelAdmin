@@ -99,8 +99,13 @@ export const UsersPage: React.FC = () => {
         .filter((user) => user.registro_estado === 'REGISTRADO' && newChapasSet.has(String(user.chapa || '').trim()))
         .map((user) => String(user.chapa || '').trim())
     ).size;
+    const premium = new Set(
+      users
+        .filter((user) => user.premium && newChapasSet.has(String(user.chapa || '').trim()))
+        .map((user) => String(user.chapa || '').trim())
+    ).size;
 
-    return { registered, total };
+    return { registered, premium, total };
   }, [newChapas, users]);
 
   return (
@@ -132,8 +137,13 @@ export const UsersPage: React.FC = () => {
               <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
                 Nuevos registrados
               </div>
-              <div className="text-lg font-bold tabular-nums text-emerald-900 dark:text-emerald-100">
-                {newUsersRegistrationSummary.registered}/{newUsersRegistrationSummary.total}
+              <div className="flex items-baseline gap-3 text-lg font-bold tabular-nums text-emerald-900 dark:text-emerald-100">
+                <span>
+                  {newUsersRegistrationSummary.registered}/{newUsersRegistrationSummary.total}
+                </span>
+                <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  Premium {newUsersRegistrationSummary.premium}/{newUsersRegistrationSummary.total}
+                </span>
               </div>
             </div>
           </div>
