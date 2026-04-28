@@ -96,6 +96,36 @@ const normalizePageName = (page: string | null | undefined): string => {
   return rawPage;
 };
 
+const ANALYTICS_RETENTION_MS = 24 * 60 * 60 * 1000;
+const ANALYTICS_RETENTION_COLUMNS: Record<string, string[]> = {
+  page_events: ['ts'],
+  access_logs: ['ts', 'created_at', 'inserted_at', 'accessed_at', 'logged_at', 'timestamp']
+};
+
+const isMissingColumnError = (error: any) => {
+  const message = String(error?.message || '').toLowerCase();
+  return error?.code === '42703' || error?.code === 'PGRST204' || (message.includes('column') && message.includes('does not exist'));
+};
+
+const pruneOldAnalyticsRows = async (cutoffIso: string) => {
+  await Promise.all(
+    Object.entries(ANALYTICS_RETENTION_COLUMNS).map(async ([table, columns]) => {
+      for (const column of columns) {
+        const { error } = await supabase
+          .from(table)
+          .delete()
+          .lt(column, cutoffIso);
+
+        if (!error) return;
+        if (isMissingColumnError(error)) continue;
+
+        console.warn(`Error pruning old '${table}' rows by '${column}':`, error);
+        return;
+      }
+    })
+  );
+};
+
 /**
  * Fetch users from 'usuarios' table and cross-reference with 'usuarios_premium'
  */
@@ -220,21 +250,13 @@ export const fetchActiveSubscriptions = async (): Promise<PremiumSubscription[]>
 
 /**
  * Fetches analytics data.
- * Accepts a timeFilter ('1d', '3d', '7d', '30d', 'all')
+ * Keeps and reads only the last 24 hours of analytics rows.
  */
-export const fetchDashboardData = async (timeFilter: string = '30d') => {
+export const fetchDashboardData = async () => {
   try {
-    // --- 1. Page Events (Filtered by Time) ---
-    let thresholdDate: string | null = null;
-    if (timeFilter !== 'all') {
-      const now = new Date();
-      let subtractDays = 30;
-      if (timeFilter === '1d') subtractDays = 1;
-      if (timeFilter === '3d') subtractDays = 3;
-      if (timeFilter === '7d') subtractDays = 7;
-
-      thresholdDate = new Date(now.setDate(now.getDate() - subtractDays)).toISOString();
-    }
+    // --- 1. Page Events (Last 24h) ---
+    const thresholdDate = new Date(Date.now() - ANALYTICS_RETENTION_MS).toISOString();
+    await pruneOldAnalyticsRows(thresholdDate);
 
     const fetchEventsInRange = async (since: string | null) => {
       const pageSize = 1000;
@@ -455,14 +477,10 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
       const d = new Date(v.created_at);
       if (isNaN(d.getTime())) return;
 
-      const bucketDate = timeFilter === '1d'
-        ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours())
-        : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const bucketDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours());
       const sortKey = bucketDate.getTime();
       const key = String(sortKey);
-      const dateStr = timeFilter === '1d'
-        ? bucketDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : `${bucketDate.getDate().toString().padStart(2, '0')}/${(bucketDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const dateStr = bucketDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
       if (!dailyMap[key]) {
         dailyMap[key] = { dateStr, sortKey, users: new Set(), views: 0 };
@@ -512,7 +530,7 @@ export const fetchDashboardData = async (timeFilter: string = '30d') => {
     const totalHourlyUniqueUsers = Object.values(hourlyMap).reduce((sum, set) => sum + set.size, 0);
     const averageHourlyUsers = Number((totalHourlyUniqueUsers / hoursInRange).toFixed(1));
 
-    const last24Threshold = Date.now() - 24 * 60 * 60 * 1000;
+    const last24Threshold = Date.now() - ANALYTICS_RETENTION_MS;
     const last24Events = (events || []).filter((e: any) => {
       const tsValue = new Date(e.ts || e.created_at || '').getTime();
       return !Number.isNaN(tsValue) && tsValue >= last24Threshold;

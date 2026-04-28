@@ -3,7 +3,7 @@ import { Card, Badge } from '../components/UI';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, Line
 } from 'recharts';
-import { Users, Eye, Zap, Activity, Monitor, Globe, Calendar, Crown } from 'lucide-react';
+import { Users, Eye, Zap, Activity, Monitor, Globe, Clock, Crown } from 'lucide-react';
 import { DashboardData } from '../types';
 import { fetchDashboardData } from '../services/supabaseClient';
 
@@ -63,32 +63,23 @@ const NewChapaBadge: React.FC = () => (
 export const Dashboard: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [timeFilter, setTimeFilter] = useState('1d');
   const [chapaQuery, setChapaQuery] = useState('');
+  const timeLabel = 'Últimas 24h';
 
   useEffect(() => {
     loadData();
-  }, [timeFilter]);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
-    const result = await fetchDashboardData(timeFilter);
+    const result = await fetchDashboardData();
     if (result) {
       setData(result);
     }
     setLoading(false);
   };
 
-  const getTimeLabel = () => {
-    switch (timeFilter) {
-      case '1d': return 'Últimas 24h';
-      case '3d': return 'Últimos 3 días';
-      case '7d': return 'Últimos 7 días';
-      case '30d': return 'Últimos 30 días';
-      case 'all': return 'Histórico total';
-      default: return 'Período';
-    }
-  };
+  const getTimeLabel = () => timeLabel;
 
   const isNewChapa = (value: string | null | undefined) => {
     const chapa = String(value || '').trim();
@@ -128,20 +119,9 @@ export const Dashboard: React.FC = () => {
           <p className="text-xs text-slate-500 dark:text-slate-400">Analítica de uso en tiempo real</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
-            <Calendar size={14} /> Filtro:
+          <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1.5">
+            <Clock size={14} /> {timeLabel}
           </span>
-          <select
-            value={timeFilter}
-            onChange={(e) => setTimeFilter(e.target.value)}
-            className="form-select text-sm border-slate-300 rounded-md shadow-sm focus:border-port-500 focus:ring-port-500 bg-slate-50 dark:bg-slate-700 dark:text-white dark:border-slate-600 px-3 py-1.5 outline-none border"
-          >
-            <option value="1d">Últimas 24 horas</option>
-            <option value="3d">Últimos 3 días</option>
-            <option value="7d">Últimos 7 días</option>
-            <option value="30d">Últimos 30 días</option>
-            <option value="all">Histórico (Todo)</option>
-          </select>
         </div>
       </div>
 
@@ -158,7 +138,7 @@ export const Dashboard: React.FC = () => {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
             <StatCard
-              title={`Usuarios Diferentes (${timeFilter})`}
+              title="Usuarios Diferentes (24h)"
               value={data.kpi.monthlyActiveUsers}
               subtext="Han accedido a la PWA"
               icon={<Activity size={24} />}
