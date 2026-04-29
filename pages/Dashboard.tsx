@@ -136,20 +136,13 @@ export const Dashboard: React.FC = () => {
         <div className="p-8 text-center text-red-500">Error cargando datos.</div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
             <StatCard
               title="Usuarios Diferentes (24h)"
               value={data.kpi.monthlyActiveUsers}
               subtext="Han accedido a la PWA"
               icon={<Activity size={24} />}
               color="bg-indigo-600"
-            />
-            <StatCard
-              title="Nuevos (Primer acceso)"
-              value={data.kpi.firstTimeNewUsers}
-              subtext={`Primer acceso en ${getTimeLabel()}`}
-              icon={<Users size={24} />}
-              color="bg-cyan-600"
             />
             <StatCard
               title="Total Visualizaciones"
@@ -188,7 +181,7 @@ export const Dashboard: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card title="Usuarios Más Activos" className="min-w-0 h-full">
               <div className="space-y-4 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                 {data.topUsers.length === 0 ? (
@@ -219,37 +212,6 @@ export const Dashboard: React.FC = () => {
                       <div className="text-right flex-shrink-0">
                         <span className="block text-sm font-bold text-port-700 dark:text-port-400">{user.value}</span>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </Card>
-
-            <Card title="Nuevos Usuarios (Primer acceso)" className="min-w-0 h-full">
-              <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                {data.newUsersFirstAccess.length === 0 ? (
-                  <div className="text-center py-8 text-slate-400 text-sm">
-                    Sin primeros accesos en {getTimeLabel().toLowerCase()}
-                  </div>
-                ) : (
-                  data.newUsersFirstAccess.map((user, idx) => (
-                    <div
-                      key={`${user.chapa}-${user.firstAccess}-${idx}`}
-                      className="flex items-start justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
-                            {user.chapa}
-                          </span>
-                          {isNewChapa(user.chapa) && <NewChapaBadge />}
-                          {user.isPremium && <Badge color="yellow">Premium</Badge>}
-                        </div>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400">Primer acceso</span>
-                      </div>
-                      <span className="text-[11px] text-slate-400 font-mono text-right whitespace-nowrap">
-                        {formatMadridDateTime(user.firstAccess)}
-                      </span>
                     </div>
                   ))
                 )}
