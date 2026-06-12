@@ -43,6 +43,29 @@ const formatMadridDateTime = (value: string) => {
   return `${formattedDate} ${formattedTime}`;
 };
 
+const normalizeSearchText = (value: string | null | undefined) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[/_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const getPageSearchText = (page: string | null | undefined) => {
+  const rawPage = String(page || '/').trim();
+  const normalizedPage = normalizeSearchText(rawPage);
+  const withoutQuery = normalizeSearchText(rawPage.split('?')[0]);
+  const pathSegments = rawPage
+    .split('?')[0]
+    .split('/')
+    .filter(Boolean)
+    .map(normalizeSearchText)
+    .join(' ');
+
+  return `${normalizedPage} ${withoutQuery} ${pathSegments}`.trim();
+};
+
 const StatCard: React.FC<{ title: string; value: string | number; subtext?: string; icon: React.ReactNode; color: string }> = ({ title, value, subtext, icon, color }) => (
   <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-start justify-between">
     <div>
@@ -64,6 +87,7 @@ export const Dashboard: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [chapaQuery, setChapaQuery] = useState('');
+  const [selectedPage, setSelectedPage] = useState('');
   const timeLabel = 'Últimas 24h';
 
   useEffect(() => {
@@ -87,26 +111,83 @@ export const Dashboard: React.FC = () => {
   };
 
   const getTimelineEvents = () => {
-    if (!data) return [];
+    if (!data) return { events: [], mode: 'all' as const };
     const normalized = chapaQuery.trim().toLowerCase();
     let events = data.timelineEvents;
-    if (!normalized) return events;
 
     const last24Threshold = Date.now() - 24 * 60 * 60 * 1000;
+    const normalizedSearch = normalizeSearchText(normalized);
+    const selectedPageKey = String(selectedPage || '').trim().toLowerCase();
 
     events = events.filter((event) => {
       const ts = new Date(event.date);
       if (Number.isNaN(ts.getTime())) return false;
-      if (ts.getTime() < last24Threshold) return false;
-      return (event.details || '').toLowerCase().includes(normalized);
+      return ts.getTime() >= last24Threshold;
     });
 
-    return [...events].sort((a, b) => (
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    ));
+    if (selectedPageKey) {
+      const pageEvents = events.filter((event) =>
+        String((event.meta || '/').split('?')[0]).trim().toLowerCase() === selectedPageKey
+      );
+      const matchingUserEvents = normalized
+        ? pageEvents.filter((event) => (event.details || '').toLowerCase().includes(normalized))
+        : pageEvents;
+      const latestByUser = new Map<string, typeof matchingUserEvents[number]>();
+
+      for (const event of matchingUserEvents) {
+        const userKey = event.details || event.id;
+        const current = latestByUser.get(userKey);
+        if (!current || new Date(event.date).getTime() > new Date(current.date).getTime()) {
+          latestByUser.set(userKey, event);
+        }
+      }
+
+      return {
+        events: [...latestByUser.values()].sort((a, b) => (
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        )),
+        mode: 'screen' as const
+      };
+    }
+
+    if (!normalized) return { events, mode: 'all' as const };
+
+    const matchingScreenEvents = events.filter((event) =>
+      getPageSearchText(event.meta || '/').includes(normalizedSearch)
+    );
+
+    if (matchingScreenEvents.length > 0) {
+      const latestByUser = new Map<string, typeof matchingScreenEvents[number]>();
+
+      for (const event of matchingScreenEvents) {
+        const userKey = event.details || event.id;
+        const current = latestByUser.get(userKey);
+        if (!current || new Date(event.date).getTime() > new Date(current.date).getTime()) {
+          latestByUser.set(userKey, event);
+        }
+      }
+
+      return {
+        events: [...latestByUser.values()].sort((a, b) => (
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        )),
+        mode: 'screen' as const
+      };
+    }
+
+    return {
+      events: events
+        .filter((event) => (event.details || '').toLowerCase().includes(normalized))
+        .sort((a, b) => (
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        )),
+      mode: 'user' as const
+    };
   };
 
-  const timelineEvents = getTimelineEvents();
+  const timelineResult = getTimelineEvents();
+  const timelineEvents = timelineResult.events;
+  const selectedPageLabel = selectedPage || 'todas las pantallas';
 
   return (
     <div className="space-y-6">
@@ -364,17 +445,33 @@ export const Dashboard: React.FC = () => {
               title="Últimos Accesos (En Tiempo Real)"
               className="lg:col-span-2"
               action={
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={selectedPage}
+                    onChange={(e) => setSelectedPage(e.target.value)}
+                    className="text-xs px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-port-500 focus:ring-1 focus:ring-port-500 max-w-[180px]"
+                    aria-label="Filtrar por pantalla"
+                  >
+                    <option value="">Todas las pantallas</option>
+                    {data.topPages.map((page) => (
+                      <option key={page.name} value={page.name}>
+                        {page.name} ({page.value})
+                      </option>
+                    ))}
+                  </select>
                   <input
                     value={chapaQuery}
                     onChange={(e) => setChapaQuery(e.target.value)}
-                    placeholder="Buscar chapa..."
+                    placeholder={selectedPage ? 'Filtrar chapa...' : 'Buscar chapa o pantalla...'}
                     className="text-xs px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-port-500 focus:ring-1 focus:ring-port-500"
                   />
-                  {chapaQuery.trim().length > 0 && (
+                  {(chapaQuery.trim().length > 0 || selectedPage) && (
                     <button
                       type="button"
-                      onClick={() => setChapaQuery('')}
+                      onClick={() => {
+                        setChapaQuery('');
+                        setSelectedPage('');
+                      }}
                       className="text-xs px-2 py-1 rounded-md border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white"
                     >
                       Limpiar
@@ -383,15 +480,19 @@ export const Dashboard: React.FC = () => {
                 </div>
               }
             >
-              {chapaQuery.trim().length > 0 && (
+              {(chapaQuery.trim().length > 0 || selectedPage) && (
                 <div className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-                  Historial de las últimas 24h para la chapa "{chapaQuery.trim()}"
+                  {timelineResult.mode === 'screen'
+                    ? `Usuarios con acceso a "${selectedPageLabel}" en las ultimas 24h${chapaQuery.trim() ? ` filtrados por chapa "${chapaQuery.trim()}"` : ''}`
+                    : `Historial de las ultimas 24h para "${chapaQuery.trim()}"`}
                 </div>
               )}
               <div className="space-y-0 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
                 {timelineEvents.length === 0 && (
                   <div className="text-center py-8 text-slate-400">
-                    {chapaQuery.trim().length > 0 ? 'Sin accesos en las últimas 24h para esa chapa' : 'No hay eventos recientes'}
+                    {selectedPage
+                      ? 'Sin usuarios con accesos en las ultimas 24h para esa pantalla'
+                      : chapaQuery.trim().length > 0 ? 'Sin accesos en las ultimas 24h para esa busqueda' : 'No hay eventos recientes'}
                   </div>
                 )}
                 {timelineEvents.map((event, idx) => {
