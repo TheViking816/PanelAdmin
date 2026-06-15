@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button, Badge } from '../components/UI';
 import { Search, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { UserProfile } from '../types';
-import { fetchDerivedNewChapas, fetchUsers } from '../services/supabaseClient';
+import { fetchNewBaseChapas, fetchUsers } from '../services/supabaseClient';
 
 const SortableHeader: React.FC<{
   label: string;
@@ -39,7 +39,7 @@ export const UsersPage: React.FC = () => {
     setLoading(true);
     const [usersData, newChapasData] = await Promise.all([
       fetchUsers(),
-      fetchDerivedNewChapas()
+      fetchNewBaseChapas()
     ]);
     setUsers(usersData);
     setNewChapas(newChapasData);
@@ -96,7 +96,7 @@ export const UsersPage: React.FC = () => {
     const newChapasSet = new Set(newChapas);
     const registered = new Set(
       users
-        .filter((user) => user.registro_estado === 'REGISTRADO' && newChapasSet.has(String(user.chapa || '').trim()))
+        .filter((user) => newChapasSet.has(String(user.chapa || '').trim()))
         .map((user) => String(user.chapa || '').trim())
     ).size;
     const premium = new Set(
@@ -135,7 +135,7 @@ export const UsersPage: React.FC = () => {
             </div>
             <div className="self-start md:self-auto rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-right dark:border-emerald-900/60 dark:bg-emerald-950/40">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                Nuevos registrados
+                Alta base 15/06/2026
               </div>
               <div className="flex items-baseline gap-3 text-lg font-bold tabular-nums text-emerald-900 dark:text-emerald-100">
                 <span>

@@ -8,6 +8,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const NEW_CHAPAS_CSV_PATH = `${import.meta.env.BASE_URL}censo_nuevas_chapas.csv`;
 const VALID_CHAPA_PATTERN = /^\d{3}$/;
+const NEW_BASE_USERS_START = '2026-06-15T00:00:00';
+const NEW_BASE_USERS_END = '2026-06-16T00:00:00';
 
 const normalizeCsvHeader = (value: string) => value.trim().toLowerCase().replace(/[\s_-]+/g, '');
 
@@ -87,6 +89,33 @@ const fetchCsvChapas = async (csvPath: string): Promise<string[]> => {
 export const fetchDerivedNewChapas = async (): Promise<string[]> => {
   const chapas = await fetchCsvChapas(NEW_CHAPAS_CSV_PATH);
   return chapas.sort((a, b) => Number(a) - Number(b));
+};
+
+export const fetchNewBaseChapas = async (): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('chapa')
+      .gte('created_at', NEW_BASE_USERS_START)
+      .lt('created_at', NEW_BASE_USERS_END)
+      .order('chapa', { ascending: true });
+
+    if (error) {
+      console.warn("Error fetching new base users:", error);
+      return [];
+    }
+
+    const chapas = new Set<string>();
+    (data || []).forEach((row: any) => {
+      const chapa = String(row.chapa || '').trim();
+      if (VALID_CHAPA_PATTERN.test(chapa)) chapas.add(chapa);
+    });
+
+    return [...chapas].sort((a, b) => Number(a) - Number(b));
+  } catch (error) {
+    console.error("Exception fetching new base users:", error);
+    return [];
+  }
 };
 
 const normalizePageName = (page: string | null | undefined): string => {
