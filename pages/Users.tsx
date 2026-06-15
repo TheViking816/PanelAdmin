@@ -96,7 +96,7 @@ export const UsersPage: React.FC = () => {
     const newChapasSet = new Set(newChapas);
     const registered = new Set(
       users
-        .filter((user) => newChapasSet.has(String(user.chapa || '').trim()))
+        .filter((user) => user.registro_estado === 'REGISTRADO' && newChapasSet.has(String(user.chapa || '').trim()))
         .map((user) => String(user.chapa || '').trim())
     ).size;
     const premium = new Set(
