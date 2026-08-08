@@ -187,7 +187,11 @@ export const Dashboard: React.FC = () => {
 
   const timelineResult = getTimelineEvents();
   const timelineEvents = timelineResult.events;
-  const selectedPageLabel = selectedPage || 'todas las pantallas';
+  const selectedPageLabel = selectedPage === 'tablon'
+    ? 'Tablon Bolsa'
+    : selectedPage === 'tablon-fijos'
+      ? 'Tablon Turno'
+      : selectedPage || 'todas las pantallas';
 
   return (
     <div className="space-y-6">
@@ -453,7 +457,12 @@ export const Dashboard: React.FC = () => {
                     aria-label="Filtrar por pantalla"
                   >
                     <option value="">Todas las pantallas</option>
-                    {data.topPages.map((page) => (
+                    {data.boardAccess.map((board) => (
+                      <option key={board.page} value={board.page}>
+                        Tablon {board.label} ({board.visits})
+                      </option>
+                    ))}
+                    {data.topPages.filter((page) => !data.boardAccess.some((board) => board.page === page.name)).map((page) => (
                       <option key={page.name} value={page.name}>
                         {page.name} ({page.value})
                       </option>
@@ -480,6 +489,36 @@ export const Dashboard: React.FC = () => {
                 </div>
               }
             >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                {data.boardAccess.map((board) => {
+                  const isActive = selectedPage === board.page;
+                  return (
+                    <button
+                      key={board.page}
+                      type="button"
+                      onClick={() => setSelectedPage(isActive ? '' : board.page)}
+                      aria-pressed={isActive}
+                      className={`min-h-[82px] rounded-lg border px-4 py-3 text-left transition-colors ${
+                        isActive
+                          ? 'border-port-600 bg-port-50 ring-2 ring-port-100 dark:border-port-500 dark:bg-port-900/40 dark:ring-port-800'
+                          : 'border-slate-200 bg-slate-50 hover:border-port-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700/40 dark:hover:border-port-500 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span className="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                        Tablon {board.label}
+                      </span>
+                      <span className="mt-1 flex items-end justify-between gap-3">
+                        <span className="text-2xl font-bold text-slate-800 dark:text-white">
+                          {board.uniqueUsers}
+                        </span>
+                        <span className="pb-0.5 text-xs text-slate-500 dark:text-slate-400">
+                          usuarios · {board.visits} visitas
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
               {(chapaQuery.trim().length > 0 || selectedPage) && (
                 <div className="mb-4 text-xs text-slate-500 dark:text-slate-400">
                   {timelineResult.mode === 'screen'
@@ -531,7 +570,11 @@ export const Dashboard: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400 px-2 py-0.5 rounded">
-                            {event.meta || '/'}
+                            {event.meta === 'tablon'
+                              ? 'Tablon Bolsa'
+                              : event.meta === 'tablon-fijos'
+                                ? 'Tablon Turno'
+                                : event.meta || '/'}
                           </span>
                           <span className="text-xs text-slate-400 font-mono">
                             {formatMadridDateTime(event.date)}

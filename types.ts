@@ -64,6 +64,13 @@ export interface DashboardData {
     meta?: string;
     isPremium?: boolean;
   }[];
+  boardAccess: {
+    page: 'tablon' | 'tablon-fijos';
+    label: string;
+    visits: number;
+    uniqueUsers: number;
+    latestVisit: string | null;
+  }[];
 }
 
 export interface DescansosUsageRow {

@@ -392,6 +392,32 @@ export const fetchDashboardData = async () => {
       })
       .filter(Boolean) as { path: string; user_id: string; created_at: string }[];
 
+    const boardAccess = [
+      { page: 'tablon' as const, label: 'Bolsa' },
+      { page: 'tablon-fijos' as const, label: 'Turno' }
+    ].map(({ page, label }) => {
+      const pageEvents = safeEvents.filter((event) => event.path === page);
+      const identifiedUsers = new Set(
+        pageEvents
+          .map((event) => event.user_id)
+          .filter((chapa) => chapa && chapa !== 'anon')
+      );
+      const latestVisit = pageEvents.reduce<string | null>((latest, event) => {
+        if (!latest) return event.created_at;
+        return new Date(event.created_at).getTime() > new Date(latest).getTime()
+          ? event.created_at
+          : latest;
+      }, null);
+
+      return {
+        page,
+        label,
+        visits: pageEvents.length,
+        uniqueUsers: identifiedUsers.size,
+        latestVisit
+      };
+    });
+
     // --- 2. Premium Count (Total DB) + Active Chapa Set ---
     const { data: premiumRows, count: totalActivePremiumCount } = await supabase
       .from('usuarios_premium')
@@ -546,7 +572,8 @@ export const fetchDashboardData = async () => {
         isPremium: row.chapa ? premiumChapas.has(String(row.chapa)) : false
       })),
       activityData,
-      timelineEvents
+      timelineEvents,
+      boardAccess
     };
 
   } catch (error) {
