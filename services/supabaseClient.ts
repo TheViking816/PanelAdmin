@@ -393,6 +393,7 @@ export const fetchDashboardData = async () => {
       .filter(Boolean) as { path: string; user_id: string; created_at: string }[];
 
     const boardAccess = [
+      { page: 'tablon-general' as const, label: 'General' },
       { page: 'tablon' as const, label: 'Bolsa' },
       { page: 'tablon-fijos' as const, label: 'Turno' }
     ].map(({ page, label }) => {

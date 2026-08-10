@@ -132,18 +132,9 @@ export const Dashboard: React.FC = () => {
       const matchingUserEvents = normalized
         ? pageEvents.filter((event) => (event.details || '').toLowerCase().includes(normalized))
         : pageEvents;
-      const latestByUser = new Map<string, typeof matchingUserEvents[number]>();
-
-      for (const event of matchingUserEvents) {
-        const userKey = event.details || event.id;
-        const current = latestByUser.get(userKey);
-        if (!current || new Date(event.date).getTime() > new Date(current.date).getTime()) {
-          latestByUser.set(userKey, event);
-        }
-      }
 
       return {
-        events: [...latestByUser.values()].sort((a, b) => (
+        events: [...matchingUserEvents].sort((a, b) => (
           new Date(b.date).getTime() - new Date(a.date).getTime()
         )),
         mode: 'screen' as const
@@ -187,11 +178,14 @@ export const Dashboard: React.FC = () => {
 
   const timelineResult = getTimelineEvents();
   const timelineEvents = timelineResult.events;
-  const selectedPageLabel = selectedPage === 'tablon'
+  const selectedPageLabel = selectedPage === 'tablon-general'
+    ? 'Tablon General'
+    : selectedPage === 'tablon'
     ? 'Tablon Bolsa'
     : selectedPage === 'tablon-fijos'
       ? 'Tablon Turno'
       : selectedPage || 'todas las pantallas';
+  const generalBoardAccess = data?.boardAccess.find((board) => board.page === 'tablon-general');
 
   return (
     <div className="space-y-6">
@@ -489,39 +483,37 @@ export const Dashboard: React.FC = () => {
                 </div>
               }
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-                {data.boardAccess.map((board) => {
-                  const isActive = selectedPage === board.page;
-                  return (
-                    <button
-                      key={board.page}
-                      type="button"
-                      onClick={() => setSelectedPage(isActive ? '' : board.page)}
-                      aria-pressed={isActive}
-                      className={`min-h-[82px] rounded-lg border px-4 py-3 text-left transition-colors ${
-                        isActive
-                          ? 'border-port-600 bg-port-50 ring-2 ring-port-100 dark:border-port-500 dark:bg-port-900/40 dark:ring-port-800'
-                          : 'border-slate-200 bg-slate-50 hover:border-port-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700/40 dark:hover:border-port-500 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      <span className="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-                        Tablon {board.label}
+              {generalBoardAccess && (
+                <div className="mb-5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPage(selectedPage === generalBoardAccess.page ? '' : generalBoardAccess.page)}
+                    aria-pressed={selectedPage === generalBoardAccess.page}
+                    className={`min-h-[82px] w-full rounded-lg border px-4 py-3 text-left transition-colors ${
+                      selectedPage === generalBoardAccess.page
+                        ? 'border-port-600 bg-port-50 ring-2 ring-port-100 dark:border-port-500 dark:bg-port-900/40 dark:ring-port-800'
+                        : 'border-slate-200 bg-slate-50 hover:border-port-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700/40 dark:hover:border-port-500 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <span className="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                      Tablon General
+                    </span>
+                    <span className="mt-1 flex items-end justify-between gap-3">
+                      <span className="text-2xl font-bold text-slate-800 dark:text-white">
+                        {generalBoardAccess.uniqueUsers}
                       </span>
-                      <span className="mt-1 flex items-end justify-between gap-3">
-                        <span className="text-2xl font-bold text-slate-800 dark:text-white">
-                          {board.uniqueUsers}
-                        </span>
-                        <span className="pb-0.5 text-xs text-slate-500 dark:text-slate-400">
-                          usuarios · {board.visits} visitas
-                        </span>
+                      <span className="pb-0.5 text-xs text-slate-500 dark:text-slate-400">
+                        usuarios · {generalBoardAccess.visits} visitas
                       </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    </span>
+                  </button>
+                </div>
+              )}
               {(chapaQuery.trim().length > 0 || selectedPage) && (
                 <div className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-                  {timelineResult.mode === 'screen'
+                  {selectedPage
+                    ? `Accesos a "${selectedPageLabel}" en las ultimas 24h${chapaQuery.trim() ? ` filtrados por chapa "${chapaQuery.trim()}"` : ''}`
+                    : timelineResult.mode === 'screen'
                     ? `Usuarios con acceso a "${selectedPageLabel}" en las ultimas 24h${chapaQuery.trim() ? ` filtrados por chapa "${chapaQuery.trim()}"` : ''}`
                     : `Historial de las ultimas 24h para "${chapaQuery.trim()}"`}
                 </div>
@@ -570,11 +562,13 @@ export const Dashboard: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400 px-2 py-0.5 rounded">
-                            {event.meta === 'tablon'
-                              ? 'Tablon Bolsa'
-                              : event.meta === 'tablon-fijos'
-                                ? 'Tablon Turno'
-                                : event.meta || '/'}
+                            {event.meta === 'tablon-general'
+                              ? 'Tablon General'
+                              : event.meta === 'tablon'
+                                ? 'Tablon Bolsa'
+                                : event.meta === 'tablon-fijos'
+                                  ? 'Tablon Turno'
+                                  : event.meta || '/'}
                           </span>
                           <span className="text-xs text-slate-400 font-mono">
                             {formatMadridDateTime(event.date)}
