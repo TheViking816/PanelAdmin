@@ -65,7 +65,7 @@ export interface DashboardData {
     isPremium?: boolean;
   }[];
   boardAccess: {
-    page: 'tablon-general' | 'tablon' | 'tablon-fijos';
+    page: 'tablon-general' | 'tablon' | 'tablon-fijos' | 'novedades';
     label: string;
     visits: number;
     uniqueUsers: number;

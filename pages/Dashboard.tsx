@@ -3,7 +3,7 @@ import { Card, Badge } from '../components/UI';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, Line
 } from 'recharts';
-import { Users, Eye, Zap, Activity, Monitor, Globe, Clock, Crown } from 'lucide-react';
+import { Users, Eye, Zap, Activity, Monitor, Globe, Clock, Crown, Bell } from 'lucide-react';
 import { DashboardData } from '../types';
 import { fetchDashboardData } from '../services/supabaseClient';
 
@@ -64,6 +64,18 @@ const getPageSearchText = (page: string | null | undefined) => {
     .join(' ');
 
   return `${normalizedPage} ${withoutQuery} ${pathSegments}`.trim();
+};
+
+const getPageLabel = (page: string | null | undefined) => {
+  const pageKey = String(page || '').trim().toLowerCase();
+  const labels: Record<string, string> = {
+    'tablon-general': 'Tablon General',
+    tablon: 'Tablon Bolsa',
+    'tablon-fijos': 'Tablon Turno',
+    novedades: 'Centro de novedades',
+    dashboard: 'Inicio'
+  };
+  return labels[pageKey] || page || '/';
 };
 
 const StatCard: React.FC<{ title: string; value: string | number; subtext?: string; icon: React.ReactNode; color: string }> = ({ title, value, subtext, icon, color }) => (
@@ -178,14 +190,10 @@ export const Dashboard: React.FC = () => {
 
   const timelineResult = getTimelineEvents();
   const timelineEvents = timelineResult.events;
-  const selectedPageLabel = selectedPage === 'tablon-general'
-    ? 'Tablon General'
-    : selectedPage === 'tablon'
-    ? 'Tablon Bolsa'
-    : selectedPage === 'tablon-fijos'
-      ? 'Tablon Turno'
-      : selectedPage || 'todas las pantallas';
+  const selectedPageLabel = selectedPage ? getPageLabel(selectedPage) : 'todas las pantallas';
   const generalBoardAccess = data?.boardAccess.find((board) => board.page === 'tablon-general');
+  const notificationsAccess = data?.boardAccess.find((board) => board.page === 'novedades');
+  const highlightedAccess = [generalBoardAccess, notificationsAccess].filter(Boolean) as NonNullable<typeof generalBoardAccess>[];
 
   return (
     <div className="space-y-6">
@@ -453,7 +461,7 @@ export const Dashboard: React.FC = () => {
                     <option value="">Todas las pantallas</option>
                     {data.boardAccess.map((board) => (
                       <option key={board.page} value={board.page}>
-                        Tablon {board.label} ({board.visits})
+                        {board.label} ({board.visits})
                       </option>
                     ))}
                     {data.topPages.filter((page) => !data.boardAccess.some((board) => board.page === page.name)).map((page) => (
@@ -483,30 +491,37 @@ export const Dashboard: React.FC = () => {
                 </div>
               }
             >
-              {generalBoardAccess && (
-                <div className="mb-5">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPage(selectedPage === generalBoardAccess.page ? '' : generalBoardAccess.page)}
-                    aria-pressed={selectedPage === generalBoardAccess.page}
-                    className={`min-h-[82px] w-full rounded-lg border px-4 py-3 text-left transition-colors ${
-                      selectedPage === generalBoardAccess.page
-                        ? 'border-port-600 bg-port-50 ring-2 ring-port-100 dark:border-port-500 dark:bg-port-900/40 dark:ring-port-800'
-                        : 'border-slate-200 bg-slate-50 hover:border-port-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700/40 dark:hover:border-port-500 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-                      Tablon General
-                    </span>
-                    <span className="mt-1 flex items-end justify-between gap-3">
-                      <span className="text-2xl font-bold text-slate-800 dark:text-white">
-                        {generalBoardAccess.uniqueUsers}
+              {highlightedAccess.length > 0 && (
+                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {highlightedAccess.map((access) => (
+                    <button
+                      key={access.page}
+                      type="button"
+                      onClick={() => setSelectedPage(selectedPage === access.page ? '' : access.page)}
+                      aria-pressed={selectedPage === access.page}
+                      className={`min-h-[92px] w-full rounded-lg border px-4 py-3 text-left transition-colors ${
+                        selectedPage === access.page
+                          ? 'border-port-600 bg-port-50 ring-2 ring-port-100 dark:border-port-500 dark:bg-port-900/40 dark:ring-port-800'
+                          : 'border-slate-200 bg-slate-50 hover:border-port-300 hover:bg-white dark:border-slate-700 dark:bg-slate-700/40 dark:hover:border-port-500 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+                        {access.page === 'novedades' ? <Bell size={14} /> : <Monitor size={14} />}
+                        {access.label}
                       </span>
-                      <span className="pb-0.5 text-xs text-slate-500 dark:text-slate-400">
-                        usuarios · {generalBoardAccess.visits} visitas
+                      <span className="mt-2 flex items-end justify-between gap-3">
+                        <span className="text-2xl font-bold text-slate-800 dark:text-white">
+                          {access.uniqueUsers}
+                        </span>
+                        <span className="pb-0.5 text-xs text-slate-500 dark:text-slate-400">
+                          usuarios · {access.visits} visitas
+                        </span>
                       </span>
-                    </span>
-                  </button>
+                      <span className="mt-1 block text-[10px] text-slate-400">
+                        {access.latestVisit ? `Último: ${formatMadridDateTime(access.latestVisit)}` : 'Sin accesos en las últimas 24h'}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               )}
               {(chapaQuery.trim().length > 0 || selectedPage) && (
@@ -535,6 +550,9 @@ export const Dashboard: React.FC = () => {
                   if (pageDetails.includes('home') || pageDetails === '/') {
                     Icon = Monitor;
                     colorClass = 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
+                  } else if (pageDetails === 'novedades') {
+                    Icon = Bell;
+                    colorClass = 'bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400';
                   } else if (pageDetails.includes('user')) {
                     Icon = Users;
                     colorClass = 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400';
@@ -562,13 +580,7 @@ export const Dashboard: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400 px-2 py-0.5 rounded">
-                            {event.meta === 'tablon-general'
-                              ? 'Tablon General'
-                              : event.meta === 'tablon'
-                                ? 'Tablon Bolsa'
-                                : event.meta === 'tablon-fijos'
-                                  ? 'Tablon Turno'
-                                  : event.meta || '/'}
+                            {getPageLabel(event.meta)}
                           </span>
                           <span className="text-xs text-slate-400 font-mono">
                             {formatMadridDateTime(event.date)}
