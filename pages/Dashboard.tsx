@@ -72,6 +72,7 @@ const getPageLabel = (page: string | null | undefined) => {
     'tablon-general': 'Tablon General',
     tablon: 'Tablon Bolsa',
     'tablon-fijos': 'Tablon Turno',
+    'contratacion-jornada': 'Contratación por jornada',
     novedades: 'Centro de novedades',
     dashboard: 'Inicio'
   };
@@ -89,10 +90,6 @@ const StatCard: React.FC<{ title: string; value: string | number; subtext?: stri
       {icon}
     </div>
   </div>
-);
-
-const NewChapaBadge: React.FC = () => (
-  <Badge color="blue">Nueva</Badge>
 );
 
 export const Dashboard: React.FC = () => {
@@ -116,11 +113,6 @@ export const Dashboard: React.FC = () => {
   };
 
   const getTimeLabel = () => timeLabel;
-
-  const isNewChapa = (value: string | null | undefined) => {
-    const chapa = String(value || '').trim();
-    return chapa.length > 0 && !!data?.newChapas?.includes(chapa);
-  };
 
   const getTimelineEvents = () => {
     if (!data) return { events: [], mode: 'all' as const };
@@ -193,7 +185,8 @@ export const Dashboard: React.FC = () => {
   const selectedPageLabel = selectedPage ? getPageLabel(selectedPage) : 'todas las pantallas';
   const generalBoardAccess = data?.boardAccess.find((board) => board.page === 'tablon-general');
   const notificationsAccess = data?.boardAccess.find((board) => board.page === 'novedades');
-  const highlightedAccess = [generalBoardAccess, notificationsAccess].filter(Boolean) as NonNullable<typeof generalBoardAccess>[];
+  const contractingAccess = data?.boardAccess.find((board) => board.page === 'contratacion-jornada');
+  const highlightedAccess = [generalBoardAccess, notificationsAccess, contractingAccess].filter(Boolean) as NonNullable<typeof generalBoardAccess>[];
 
   return (
     <div className="space-y-6">
@@ -290,7 +283,6 @@ export const Dashboard: React.FC = () => {
                             <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
                               {user.name}
                             </span>
-                            {isNewChapa(user.name) && <NewChapaBadge />}
                             {user.isPremium && <Badge color="yellow">Premium</Badge>}
                           </div>
                           <span className="text-[10px] text-slate-400 uppercase">Chapa / ID</span>
@@ -305,10 +297,10 @@ export const Dashboard: React.FC = () => {
               </div>
             </Card>
 
-            <Card title="Últimos Registros Completados" className="min-w-0 h-full">
+            <Card title="Últimos Usuarios Premium" className="min-w-0 h-full">
               <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                 {data.latestCompletedRegistrations.length === 0 ? (
-                  <div className="text-center py-8 text-slate-400 text-sm">Sin registros completados recientes</div>
+                  <div className="text-center py-8 text-slate-400 text-sm">Sin usuarios Premium recientes</div>
                 ) : (
                   data.latestCompletedRegistrations.map((user, idx) => (
                     <div
@@ -320,7 +312,6 @@ export const Dashboard: React.FC = () => {
                           <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
                             {user.nombre}
                           </span>
-                          {isNewChapa(user.chapa) && <NewChapaBadge />}
                           {user.isPremium && <Badge color="yellow">Premium</Badge>}
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
@@ -492,7 +483,7 @@ export const Dashboard: React.FC = () => {
               }
             >
               {highlightedAccess.length > 0 && (
-                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {highlightedAccess.map((access) => (
                     <button
                       key={access.page}
@@ -506,7 +497,7 @@ export const Dashboard: React.FC = () => {
                       }`}
                     >
                       <span className="flex items-center gap-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-                        {access.page === 'novedades' ? <Bell size={14} /> : <Monitor size={14} />}
+                        {access.page === 'novedades' ? <Bell size={14} /> : access.page === 'contratacion-jornada' ? <Globe size={14} /> : <Monitor size={14} />}
                         {access.label}
                       </span>
                       <span className="mt-2 flex items-end justify-between gap-3">
@@ -575,7 +566,6 @@ export const Dashboard: React.FC = () => {
                           <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                             {event.details}
                           </p>
-                          {isNewChapa(event.details) && <NewChapaBadge />}
                           {event.isPremium && <Badge color="yellow">Premium</Badge>}
                         </div>
                         <div className="flex items-center gap-2 mt-1">

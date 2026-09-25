@@ -37,7 +37,6 @@ export interface PremiumSubscription {
 }
 
 export interface DashboardData {
-  newChapas: string[];
   kpi: {
     peakHourlyUniqueUsers: number;
     peakHourlyViews: number;
@@ -65,7 +64,7 @@ export interface DashboardData {
     isPremium?: boolean;
   }[];
   boardAccess: {
-    page: 'tablon-general' | 'tablon' | 'tablon-fijos' | 'novedades';
+    page: 'tablon-general' | 'tablon' | 'tablon-fijos' | 'novedades' | 'contratacion-jornada';
     label: string;
     visits: number;
     uniqueUsers: number;
@@ -83,5 +82,4 @@ export type PageView =
   | 'DASHBOARD' 
   | 'USUARIOS' 
   | 'PREMIUM' 
-  | 'CONFIGURACION'
-  | 'DESCANSOS';
+  | 'CONFIGURACION';

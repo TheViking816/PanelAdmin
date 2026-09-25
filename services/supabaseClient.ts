@@ -396,7 +396,8 @@ export const fetchDashboardData = async () => {
       { page: 'tablon-general' as const, label: 'Tablon General' },
       { page: 'tablon' as const, label: 'Tablon Bolsa' },
       { page: 'tablon-fijos' as const, label: 'Tablon Turno' },
-      { page: 'novedades' as const, label: 'Centro de novedades' }
+      { page: 'novedades' as const, label: 'Centro de novedades' },
+      { page: 'contratacion-jornada' as const, label: 'Contratación por jornada' }
     ].map(({ page, label }) => {
       const pageEvents = safeEvents.filter((event) => event.path === page);
       const identifiedUsers = new Set(
@@ -430,19 +431,21 @@ export const fetchDashboardData = async () => {
       if (p.chapa) premiumChapas.add(String(p.chapa));
     });
 
-    const { data: latestRegisteredRows, error: latestRegisteredError } = await supabase
-      .from('usuarios')
-      .select('chapa, nombre, email, updated_at, created_at, password_hash')
-      .not('nombre', 'is', null)
-      .not('email', 'is', null)
-      .not('password_hash', 'is', null)
-      .order('updated_at', { ascending: false })
-      .limit(12);
+    const { data: latestRegisteredRows, error: latestRegisteredError } = premiumChapas.size
+      ? await supabase
+          .from('usuarios')
+          .select('chapa, nombre, email, updated_at, created_at, password_hash')
+          .in('chapa', [...premiumChapas])
+          .not('nombre', 'is', null)
+          .not('email', 'is', null)
+          .not('password_hash', 'is', null)
+          .order('updated_at', { ascending: false })
+          .limit(12)
+      : { data: [], error: null };
 
     if (latestRegisteredError) {
       console.warn("Error fetching latest completed registrations:", latestRegisteredError);
     }
-    const newChapas = await fetchDerivedNewChapas();
 
     // --- Calculations based on Filtered Events ---
 
@@ -555,7 +558,6 @@ export const fetchDashboardData = async () => {
     }));
 
     return {
-      newChapas,
       kpi: {
         peakHourlyUniqueUsers,
         peakHourlyViews,

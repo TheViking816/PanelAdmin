@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  LayoutDashboard, Users, Star, Settings, Menu, X, LogOut, Wifi, Activity, BedDouble
+  LayoutDashboard, Users, Star, Settings, Menu, X, LogOut, Wifi, Activity
 } from 'lucide-react';
 import { PageView, UserRole } from '../types';
 
@@ -40,7 +40,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
     { id: 'DASHBOARD', label: 'Activity Analytics', icon: <Activity size={20} /> },
     { id: 'USUARIOS', label: 'Usuarios', icon: <Users size={20} /> },
     { id: 'PREMIUM', label: 'Suscripciones', icon: <Star size={20} /> },
-    { id: 'DESCANSOS', label: 'Descansos (Uso)', icon: <BedDouble size={20} /> },
     { id: 'CONFIGURACION', label: 'Configuración', icon: <Settings size={20} /> },
   ];
 
@@ -127,9 +126,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
             <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white capitalize truncate">
               {currentPage === 'DASHBOARD'
                 ? 'Activity Overview'
-                : currentPage === 'DESCANSOS'
-                  ? 'Descansos CPE'
-                  : currentPage.toLowerCase()}
+                : currentPage.toLowerCase()}
             </h2>
           </div>
 
