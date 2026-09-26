@@ -64,7 +64,7 @@ export interface DashboardData {
     isPremium?: boolean;
   }[];
   boardAccess: {
-    page: 'tablon-general' | 'tablon' | 'tablon-fijos' | 'novedades' | 'contratacion-jornada';
+    page: 'tablon-general' | 'tablon' | 'tablon-fijos' | 'novedades' | 'contratacion-jornada' | 'tarifas-bolsa';
     label: string;
     visits: number;
     uniqueUsers: number;

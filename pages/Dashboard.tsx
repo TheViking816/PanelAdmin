@@ -73,6 +73,7 @@ const getPageLabel = (page: string | null | undefined) => {
     tablon: 'Tablon Bolsa',
     'tablon-fijos': 'Tablon Turno',
     'contratacion-jornada': 'Contratación por jornada',
+    'tarifas-bolsa': 'Tarifas Bolsa 2026',
     novedades: 'Centro de novedades',
     dashboard: 'Inicio'
   };
@@ -186,7 +187,8 @@ export const Dashboard: React.FC = () => {
   const generalBoardAccess = data?.boardAccess.find((board) => board.page === 'tablon-general');
   const notificationsAccess = data?.boardAccess.find((board) => board.page === 'novedades');
   const contractingAccess = data?.boardAccess.find((board) => board.page === 'contratacion-jornada');
-  const highlightedAccess = [generalBoardAccess, notificationsAccess, contractingAccess].filter(Boolean) as NonNullable<typeof generalBoardAccess>[];
+  const tarifasAccess = data?.boardAccess.find((board) => board.page === 'tarifas-bolsa');
+  const highlightedAccess = [generalBoardAccess, notificationsAccess, contractingAccess, tarifasAccess].filter(Boolean) as NonNullable<typeof generalBoardAccess>[];
 
   return (
     <div className="space-y-6">
@@ -483,7 +485,7 @@ export const Dashboard: React.FC = () => {
               }
             >
               {highlightedAccess.length > 0 && (
-                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {highlightedAccess.map((access) => (
                     <button
                       key={access.page}

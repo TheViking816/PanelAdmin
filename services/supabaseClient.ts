@@ -397,7 +397,8 @@ export const fetchDashboardData = async () => {
       { page: 'tablon' as const, label: 'Tablon Bolsa' },
       { page: 'tablon-fijos' as const, label: 'Tablon Turno' },
       { page: 'novedades' as const, label: 'Centro de novedades' },
-      { page: 'contratacion-jornada' as const, label: 'Contratación por jornada' }
+      { page: 'contratacion-jornada' as const, label: 'Contratación por jornada' },
+      { page: 'tarifas-bolsa' as const, label: 'Tarifas Bolsa 2026' }
     ].map(({ page, label }) => {
       const pageEvents = safeEvents.filter((event) => event.path === page);
       const identifiedUsers = new Set(
