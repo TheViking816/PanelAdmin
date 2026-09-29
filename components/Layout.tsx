@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  LayoutDashboard, Users, Star, Settings, Menu, X, LogOut, Wifi, Activity
+  LayoutDashboard, Users, Star, Settings, Menu, X, LogOut, Wifi, Activity, MessageSquare
 } from 'lucide-react';
 import { PageView, UserRole } from '../types';
 
@@ -9,6 +9,7 @@ interface LayoutProps {
   currentPage: PageView;
   onNavigate: (page: PageView) => void;
   userRole: UserRole;
+  onLogout: () => void;
 }
 
 const SidebarItem: React.FC<{ 
@@ -32,13 +33,14 @@ const SidebarItem: React.FC<{
   </button>
 );
 
-export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigate, onLogout }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const menuItems = [
     { id: 'DASHBOARD', label: 'Activity Analytics', icon: <Activity size={20} /> },
     { id: 'USUARIOS', label: 'Usuarios', icon: <Users size={20} /> },
+    { id: 'CHATS_PRIVADOS', label: 'Chats privados', icon: <MessageSquare size={20} /> },
     { id: 'PREMIUM', label: 'Suscripciones', icon: <Star size={20} /> },
     { id: 'CONFIGURACION', label: 'Configuración', icon: <Settings size={20} /> },
   ];
@@ -108,7 +110,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
                 ))}
              </nav>
              <div className="absolute bottom-4 left-4 right-4">
-                <button className="w-full flex items-center justify-center p-3 bg-port-800 rounded-lg text-slate-300 hover:text-white">
+                <button onClick={onLogout} className="w-full flex items-center justify-center p-3 bg-port-800 rounded-lg text-slate-300 hover:text-white">
                   <LogOut size={20} className="mr-2"/> Cerrar Sesión
                 </button>
              </div>
@@ -126,7 +128,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
             <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-white capitalize truncate">
               {currentPage === 'DASHBOARD'
                 ? 'Activity Overview'
-                : currentPage.toLowerCase()}
+                : currentPage === 'CHATS_PRIVADOS' ? 'Chats privados' : currentPage.toLowerCase()}
             </h2>
           </div>
 
@@ -135,7 +137,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onNavigat
               <Wifi size={12} className="mr-1" />
               Connected
             </div>
-            <button className="text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1" title="Cerrar Sesión">
+            <button onClick={onLogout} className="text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1" title="Cerrar Sesión">
               <LogOut size={20} />
             </button>
           </div>

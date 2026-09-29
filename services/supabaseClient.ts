@@ -1,10 +1,11 @@
+import { fetchMonitorUsers } from './chatMonitor';
 import { createClient } from '@supabase/supabase-js';
 import { UserProfile, PremiumSubscription } from '../types';
 
-const SUPABASE_URL = 'https://icszzxkdxatfytpmoviq.supabase.co';
+const SUPABASE_URL = import.meta.env.VITE_PORTAL_PREVIEW === 'true' ? window.location.origin + '/preview-supabase' : import.meta.env.VITE_PORTAL_DATA_URL || 'https://icszzxkdxatfytpmoviq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljc3p6eGtkeGF0Znl0cG1vdmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2Mzk2NjUsImV4cCI6MjA3ODIxNTY2NX0.hmQWNB3sCyBh39gdNgQLjjlIvliwJje-OYf0kkPObVA';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient(SUPABASE_URL, import.meta.env.VITE_PORTAL_DATA_KEY || SUPABASE_ANON_KEY);
 
 const NEW_CHAPAS_CSV_PATH = `${import.meta.env.BASE_URL}censo_nuevas_chapas.csv`;
 const VALID_CHAPA_PATTERN = /^\d{3}$/;
@@ -160,11 +161,8 @@ const pruneOldAnalyticsRows = async (cutoffIso: string) => {
  */
 export const fetchUsers = async (): Promise<UserProfile[]> => {
   try {
-    const { data: usersData, error: usersError } = await supabase
-      .from('usuarios')
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .limit(2000);
+    const usersData = await fetchMonitorUsers();
+    const usersError = null;
 
     if (usersError) {
       console.warn("Error fetching 'usuarios':", usersError);
@@ -187,7 +185,7 @@ export const fetchUsers = async (): Promise<UserProfile[]> => {
       const userChapa = u.chapa ? String(u.chapa) : '';
       const hasNombre = typeof u.nombre === 'string' && u.nombre.trim().length > 0;
       const hasEmail = typeof u.email === 'string' && u.email.trim().length > 0;
-      const hasPassword = typeof u.password_hash === 'string' && u.password_hash.trim().length > 0;
+      const hasPassword = u.registered === true;
       const registroEstado = hasNombre && hasEmail && hasPassword ? 'REGISTRADO' : 'PENDIENTE';
       const isPremium = userChapa && premiumChapas.has(userChapa);
 
@@ -231,10 +229,7 @@ export const fetchActiveSubscriptions = async (): Promise<PremiumSubscription[]>
     }
 
     // 2. Fetch users to map names/emails. 
-    const { data: usersData } = await supabase
-      .from('usuarios')
-      .select('id, nombre, email, chapa')
-      .limit(2000); 
+    const usersData = await fetchMonitorUsers(); 
 
     // Map by Chapa
     const userMapByChapa = new Map();
@@ -432,17 +427,8 @@ export const fetchDashboardData = async () => {
       if (p.chapa) premiumChapas.add(String(p.chapa));
     });
 
-    const { data: latestRegisteredRows, error: latestRegisteredError } = premiumChapas.size
-      ? await supabase
-          .from('usuarios')
-          .select('chapa, nombre, email, updated_at, created_at, password_hash')
-          .in('chapa', [...premiumChapas])
-          .not('nombre', 'is', null)
-          .not('email', 'is', null)
-          .not('password_hash', 'is', null)
-          .order('updated_at', { ascending: false })
-          .limit(12)
-      : { data: [], error: null };
+    const latestRegisteredRows = premiumChapas.size ? (await fetchMonitorUsers()).filter(u => premiumChapas.has(u.chapa) && u.registered).slice(0, 12) : [];
+    const latestRegisteredError = null;
 
     if (latestRegisteredError) {
       console.warn("Error fetching latest completed registrations:", latestRegisteredError);

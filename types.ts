@@ -82,4 +82,5 @@ export type PageView =
   | 'DASHBOARD' 
   | 'USUARIOS' 
   | 'PREMIUM' 
-  | 'CONFIGURACION';
+  | 'CONFIGURACION'
+  | 'CHATS_PRIVADOS';
