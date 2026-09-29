@@ -229,7 +229,7 @@ export const fetchActiveSubscriptions = async (): Promise<PremiumSubscription[]>
     }
 
     // 2. Fetch users to map names/emails. 
-    const usersData = await fetchMonitorUsers(); 
+    const usersData = await fetchMonitorUsers();
 
     // Map by Chapa
     const userMapByChapa = new Map();

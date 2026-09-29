@@ -3,7 +3,7 @@ let token = sessionStorage.getItem('portal-monitor-session') || '';
 export function hasMonitorSession() { return Boolean(token); }
 export async function monitorRequest(action: string, data: Record<string, unknown> = {}) {
   const response = await fetch(MONITOR_API, {
-    method: 'POST', cache: 'no-store', credentials: 'omit',
+    method: 'POST', cache: 'no-store', credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', 'X-Portal-Request': '1', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ action, ...data }), signal: AbortSignal.timeout(15000)
   });
