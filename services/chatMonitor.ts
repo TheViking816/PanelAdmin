@@ -1,4 +1,9 @@
 export const MONITOR_API = import.meta.env.VITE_PORTAL_MONITOR_API || 'https://portal-estiba-vlc.vercel.app/api/portal';
+const handoff = window.location.hash.startsWith('#monitor_token=') ? decodeURIComponent(window.location.hash.slice('#monitor_token='.length)) : '';
+if (handoff) {
+  if (/^[0-9a-f]{64}$/.test(handoff)) sessionStorage.setItem('portal-monitor-session', handoff);
+  window.history.replaceState(null, '', window.location.pathname + window.location.search + '#DASHBOARD');
+}
 let token = sessionStorage.getItem('portal-monitor-session') || '';
 export function hasMonitorSession() { return Boolean(token); }
 export async function monitorRequest(action: string, data: Record<string, unknown> = {}) {
