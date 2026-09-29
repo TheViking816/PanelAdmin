@@ -70,6 +70,7 @@ const getPageLabel = (page: string | null | undefined) => {
   const pageKey = String(page || '').trim().toLowerCase();
   const labels: Record<string, string> = {
     'tablon-general': 'Tablon General',
+    'chats-privados': 'Chats privados',
     tablon: 'Tablon Bolsa',
     'tablon-fijos': 'Tablon Turno',
     'contratacion-jornada': 'Contratación por jornada',
@@ -184,11 +185,11 @@ export const Dashboard: React.FC = () => {
   const timelineResult = getTimelineEvents();
   const timelineEvents = timelineResult.events;
   const selectedPageLabel = selectedPage ? getPageLabel(selectedPage) : 'todas las pantallas';
-  const generalBoardAccess = data?.boardAccess.find((board) => board.page === 'tablon-general');
+  const chatAccess = data?.boardAccess.find((board) => board.page === 'chats-privados');
   const notificationsAccess = data?.boardAccess.find((board) => board.page === 'novedades');
   const contractingAccess = data?.boardAccess.find((board) => board.page === 'contratacion-jornada');
   const tarifasAccess = data?.boardAccess.find((board) => board.page === 'tarifas-bolsa');
-  const highlightedAccess = [generalBoardAccess, notificationsAccess, contractingAccess, tarifasAccess].filter(Boolean) as NonNullable<typeof generalBoardAccess>[];
+  const highlightedAccess = [chatAccess, notificationsAccess, contractingAccess, tarifasAccess].filter(Boolean) as NonNullable<typeof chatAccess>[];
 
   return (
     <div className="space-y-6">

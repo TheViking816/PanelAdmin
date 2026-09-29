@@ -388,7 +388,7 @@ export const fetchDashboardData = async () => {
       .filter(Boolean) as { path: string; user_id: string; created_at: string }[];
 
     const boardAccess = [
-      { page: 'tablon-general' as const, label: 'Tablon General' },
+      { page: 'chats-privados' as const, label: 'Chats privados' },
       { page: 'tablon' as const, label: 'Tablon Bolsa' },
       { page: 'tablon-fijos' as const, label: 'Tablon Turno' },
       { page: 'novedades' as const, label: 'Centro de novedades' },
