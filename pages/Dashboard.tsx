@@ -6,6 +6,7 @@ import {
 import { Users, Eye, Zap, Activity, Monitor, Globe, Clock, Crown, Bell } from 'lucide-react';
 import { DashboardData } from '../types';
 import { fetchDashboardData } from '../services/supabaseClient';
+import { CampaignMetrics, fetchCampaignMetrics } from '../services/chatMonitor';
 
 const MADRID_TIME_ZONE = 'Europe/Madrid';
 
@@ -96,6 +97,8 @@ const StatCard: React.FC<{ title: string; value: string | number; subtext?: stri
 
 export const Dashboard: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [campaign, setCampaign] = useState<CampaignMetrics | null>(null);
+  const [campaignError, setCampaignError] = useState('');
   const [loading, setLoading] = useState(true);
   const [chapaQuery, setChapaQuery] = useState('');
   const [selectedPage, setSelectedPage] = useState('');
@@ -107,9 +110,18 @@ export const Dashboard: React.FC = () => {
 
   const loadData = async () => {
     setLoading(true);
-    const result = await fetchDashboardData();
+    const [dashboardResult, campaignResult] = await Promise.allSettled([
+      fetchDashboardData(), fetchCampaignMetrics()
+    ]);
+    const result = dashboardResult.status === 'fulfilled' ? dashboardResult.value : null;
     if (result) {
       setData(result);
+    }
+    if (campaignResult.status === 'fulfilled') {
+      setCampaign(campaignResult.value);
+      setCampaignError('');
+    } else {
+      setCampaignError('No se pudo cargar el seguimiento de la campaña.');
     }
     setLoading(false);
   };
@@ -219,6 +231,45 @@ export const Dashboard: React.FC = () => {
         <div className="p-8 text-center text-red-500">Error cargando datos.</div>
       ) : (
         <>
+          <Card title="Sueldómetro · semana de prueba" className="min-w-0">
+            {campaign ? (
+              <div className="space-y-5">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {formatMadridDateTime(campaign.campaign.starts_at)} – {formatMadridDateTime(campaign.campaign.ends_at)} · Datos acumulados de la campaña
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <StatCard title="Usuarios sin premium" value={campaign.visitors.length} subtext="Entraron al Sueldómetro" icon={<Eye size={22} />} color="bg-blue-600" />
+                  <StatCard title="Altas premium" value={campaign.new_subscriptions.length} subtext="Nuevas durante la campaña" icon={<Crown size={22} />} color="bg-amber-500" />
+                  <StatCard title="Probaron y se suscribieron" value={campaign.new_subscriptions.filter(row => row.visited_trial).length} subtext="Primero entraron sin premium" icon={<Zap size={22} />} color="bg-emerald-600" />
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">La coincidencia temporal no demuestra que la prueba causara la suscripción.</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Visitas sin premium</h3>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {campaign.visitors.length ? campaign.visitors.map(row => (
+                        <div key={row.chapa} className="flex justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 px-3 py-2 text-sm">
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">Chapa {row.chapa} · {row.visits} visitas</span>
+                          <span className="text-xs text-slate-500 whitespace-nowrap">{formatMadridDateTime(row.last_visit)}</span>
+                        </div>
+                      )) : <p className="text-sm text-slate-400">Aún no hay visitas registradas.</p>}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Nuevas suscripciones</h3>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {campaign.new_subscriptions.length ? campaign.new_subscriptions.map(row => (
+                        <div key={row.chapa} className="flex justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 px-3 py-2 text-sm">
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">Chapa {row.chapa}{row.visited_trial ? ' · Probó Sueldómetro' : ''}</span>
+                          <span className="text-xs text-slate-500 whitespace-nowrap">{formatMadridDateTime(row.subscribed_at)}</span>
+                        </div>
+                      )) : <p className="text-sm text-slate-400">Aún no hay altas.</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : <p className="text-sm text-slate-500">{campaignError || 'Sin datos de campaña.'}</p>}
+          </Card>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
             <StatCard
               title="Usuarios Diferentes (24h)"

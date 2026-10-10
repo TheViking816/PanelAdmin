@@ -27,6 +27,14 @@ export async function monitorLogout() {
   await monitorRequest('monitor_logout'); token = ''; sessionStorage.removeItem('portal-monitor-session');
 }
 export async function fetchMonitorUsers(): Promise<any[]> { return monitorRequest('monitor_users'); }
+export interface CampaignMetrics {
+  campaign: { id: string; starts_at: string; ends_at: string; enabled: boolean };
+  visitors: { chapa: string; first_visit: string; last_visit: string; visits: number }[];
+  new_subscriptions: { chapa: string; subscribed_at: string; visited_trial: boolean }[];
+}
+export async function fetchCampaignMetrics(): Promise<CampaignMetrics> {
+  return monitorRequest('monitor_campaign_metrics');
+}
 export interface MonitoredMessage {
   message_id: string; conversation_id: string; sender_chapa: string; recipient_chapa: string;
   body: string; sent_at: string; delivered_at: string | null; read_at: string | null;
