@@ -30,6 +30,7 @@ export async function fetchMonitorUsers(): Promise<any[]> { return monitorReques
 export interface CampaignMetrics {
   campaign: { id: string; starts_at: string; ends_at: string; enabled: boolean };
   visitors: { chapa: string; first_visit: string; last_visit: string; visits: number }[];
+  actions: { chapa: string; action: string; first_action: string; last_action: string; actions: number }[];
   new_subscriptions: { chapa: string; subscribed_at: string; visited_trial: boolean }[];
 }
 export async function fetchCampaignMetrics(): Promise<CampaignMetrics> {

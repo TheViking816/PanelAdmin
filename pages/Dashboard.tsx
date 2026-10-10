@@ -237,12 +237,36 @@ export const Dashboard: React.FC = () => {
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {formatMadridDateTime(campaign.campaign.starts_at)} – {formatMadridDateTime(campaign.campaign.ends_at)} · Datos acumulados de la campaña
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                   <StatCard title="Usuarios sin premium" value={campaign.visitors.length} subtext="Entraron al Sueldómetro" icon={<Eye size={22} />} color="bg-blue-600" />
+                  <StatCard title="Usaron controles" value={new Set((campaign.actions || []).map(row => row.chapa)).size} subtext="Guardaron algún ajuste" icon={<Activity size={22} />} color="bg-cyan-600" />
                   <StatCard title="Altas premium" value={campaign.new_subscriptions.length} subtext="Nuevas durante la campaña" icon={<Crown size={22} />} color="bg-amber-500" />
                   <StatCard title="Probaron y se suscribieron" value={campaign.new_subscriptions.filter(row => row.visited_trial).length} subtext="Primero entraron sin premium" icon={<Zap size={22} />} color="bg-emerald-600" />
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">La coincidencia temporal no demuestra que la prueba causara la suscripción.</p>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Ajustes guardados por usuarios sin premium</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2 mb-3">
+                    {[
+                      ['prima', 'Primas'], ['movimientos', 'Movimientos'], ['remate', 'Remates'],
+                      ['relevo', 'Relevos'], ['trinca', 'Trinca'], ['irpf', 'IRPF'],
+                      ['jornal_manual', 'Jornales añadidos'], ['jornal_editado', 'Jornales editados'], ['jornal_borrado', 'Jornales borrados']
+                    ].map(([key, label]) => (
+                      <div key={key} className="rounded-lg bg-slate-50 dark:bg-slate-700/50 px-3 py-2">
+                        <span className="block text-xs text-slate-500 dark:text-slate-400">{label}</span>
+                        <strong className="text-lg text-slate-800 dark:text-white">{(campaign.actions || []).filter(row => row.action === key).reduce((sum, row) => sum + row.actions, 0)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="max-h-56 overflow-y-auto space-y-2">
+                    {(campaign.actions || []).length ? (campaign.actions || []).map(row => (
+                      <div key={`${row.chapa}-${row.action}`} className="flex justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 px-3 py-2 text-sm">
+                        <span className="font-semibold text-slate-700 dark:text-slate-200">Chapa {row.chapa} · {row.action.replaceAll('_', ' ')} · {row.actions}</span>
+                        <span className="text-xs text-slate-500 whitespace-nowrap">{formatMadridDateTime(row.last_action)}</span>
+                      </div>
+                    )) : <p className="text-sm text-slate-400">Aún no hay ajustes guardados desde que se activó el seguimiento.</p>}
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Visitas sin premium</h3>
