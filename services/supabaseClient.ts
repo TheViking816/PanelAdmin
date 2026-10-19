@@ -7,6 +7,21 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const supabase = createClient(SUPABASE_URL, import.meta.env.VITE_PORTAL_DATA_KEY || SUPABASE_ANON_KEY);
 
+export const fetchCurrentPremiumChapas = async (): Promise<string[]> => {
+  const chapas: string[] = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('usuarios_premium')
+      .select('chapa')
+      .in('estado', ['active', 'trialing'])
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    chapas.push(...(data || []).map((row) => String(row.chapa || '')).filter(Boolean));
+    if (!data || data.length < pageSize) return chapas;
+  }
+};
+
 const NEW_CHAPAS_CSV_PATH = `${import.meta.env.BASE_URL}censo_nuevas_chapas.csv`;
 const VALID_CHAPA_PATTERN = /^\d{3}$/;
 const NEW_BASE_USERS_START = '2026-06-15T00:00:00';
