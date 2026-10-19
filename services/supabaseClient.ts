@@ -435,19 +435,26 @@ export const fetchDashboardData = async () => {
     // --- 2. Premium Count (Total DB) + Active Chapa Set ---
     const { data: premiumRows, count: totalActivePremiumCount } = await supabase
       .from('usuarios_premium')
-      .select('chapa', { count: 'exact' })
+      .select('chapa, periodo_inicio, created_at', { count: 'exact' })
       .eq('estado', 'active');
     const premiumChapas = new Set<string>();
     (premiumRows || []).forEach((p: any) => {
       if (p.chapa) premiumChapas.add(String(p.chapa));
     });
 
-    const latestRegisteredRows = premiumChapas.size ? (await fetchMonitorUsers()).filter(u => premiumChapas.has(u.chapa) && u.registered).slice(0, 12) : [];
-    const latestRegisteredError = null;
-
-    if (latestRegisteredError) {
-      console.warn("Error fetching latest completed registrations:", latestRegisteredError);
+    const usersByChapa = new Map<string, any>();
+    if (premiumChapas.size) {
+      (await fetchMonitorUsers()).forEach((user: any) => usersByChapa.set(String(user.chapa), user));
     }
+    const latestPremiumRows = (premiumRows || [])
+      .map((subscription: any) => ({
+        ...subscription,
+        user: usersByChapa.get(String(subscription.chapa)),
+        started_at: subscription.periodo_inicio || subscription.created_at
+      }))
+      .filter((subscription: any) => subscription.user?.registered && subscription.started_at)
+      .sort((a: any, b: any) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+      .slice(0, 12);
 
     // --- Calculations based on Filtered Events ---
 
@@ -570,12 +577,12 @@ export const fetchDashboardData = async () => {
       },
       topPages: allPages,
       topUsers, // New Data
-      latestCompletedRegistrations: (latestRegisteredRows || []).map((row: any) => ({
+      latestCompletedRegistrations: latestPremiumRows.map((row: any) => ({
         chapa: String(row.chapa || ''),
-        nombre: row.nombre || 'Sin nombre',
-        email: row.email || 'Sin email',
-        updated_at: row.updated_at || row.created_at || new Date().toISOString(),
-        isPremium: row.chapa ? premiumChapas.has(String(row.chapa)) : false
+        nombre: row.user.nombre || 'Sin nombre',
+        email: row.user.email || 'Sin email',
+        updated_at: row.started_at,
+        isPremium: true
       })),
       activityData,
       timelineEvents,
