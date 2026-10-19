@@ -3,7 +3,7 @@ import { Card, Badge } from '../components/UI';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, Line
 } from 'recharts';
-import { Users, Eye, Activity, Monitor, Globe, Clock, Crown, Bell } from 'lucide-react';
+import { Users, Eye, Zap, Activity, Monitor, Globe, Clock, Crown, Bell } from 'lucide-react';
 import { DashboardData } from '../types';
 import { fetchCurrentPremiumChapas, fetchDashboardData } from '../services/supabaseClient';
 import { CampaignMetrics, fetchCampaignMetrics } from '../services/chatMonitor';
