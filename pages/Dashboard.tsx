@@ -323,7 +323,7 @@ export const Dashboard: React.FC = () => {
               </div>
             </Card>
 
-            <Card title="Últimos Usuarios Premium" className="min-w-0 h-full">
+            <Card title="Últimas altas Premium" className="min-w-0 h-full">
               <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                 {data.latestCompletedRegistrations.length === 0 ? (
                   <div className="text-center py-8 text-slate-400 text-sm">Sin usuarios Premium recientes</div>

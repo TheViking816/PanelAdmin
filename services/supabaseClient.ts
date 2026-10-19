@@ -435,7 +435,7 @@ export const fetchDashboardData = async () => {
     // --- 2. Premium Count (Total DB) + Active Chapa Set ---
     const { data: premiumRows, count: totalActivePremiumCount } = await supabase
       .from('usuarios_premium')
-      .select('chapa, periodo_inicio, created_at', { count: 'exact' })
+      .select('chapa, stripe_subscription_id, subscription_started_at', { count: 'exact' })
       .eq('estado', 'active');
     const premiumChapas = new Set<string>();
     (premiumRows || []).forEach((p: any) => {
@@ -450,9 +450,9 @@ export const fetchDashboardData = async () => {
       .map((subscription: any) => ({
         ...subscription,
         user: usersByChapa.get(String(subscription.chapa)),
-        started_at: subscription.periodo_inicio || subscription.created_at
+        started_at: subscription.subscription_started_at
       }))
-      .filter((subscription: any) => subscription.user?.registered && subscription.started_at)
+      .filter((subscription: any) => subscription.stripe_subscription_id && subscription.user?.registered && subscription.started_at)
       .sort((a: any, b: any) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
       .slice(0, 12);
 
